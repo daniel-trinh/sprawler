@@ -1,0 +1,19 @@
+# Routes
+# This file defines all application routes (Higher priority routes first)
+# ~~~~
+
+# Home page
+GET     /                           controllers.Application.index
+
+GET     /redeem/:id                 controllers.Application.redeem(id: Int)
+
+GET     /waiting                    controllers.Application.waiting
+
+GET     /echo                       controllers.Application.echo
+
+GET     /helloWorld                 controllers.Application.helloWorld
+
+GET     /goodbyeWorld               controllers.Application.goodbyeWorld
+
+# Map static resources from the /public folder to the /assets URL path
+GET     /assets/*file               controllers.Assets.at(path="/public", file)
