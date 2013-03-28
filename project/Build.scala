@@ -67,19 +67,19 @@ object Dependencies {
   val typesafeConfig = "com.typesafe"      %  "config"         % "1.0.0"
 
   // Akka
-  val akkaAgent      = "com.typesafe.akka" %% "akka-agent"     % "2.1.2"
-  val akkaActor      = "com.typesafe.akka" %% "akka-actor"     % "2.1.2"
+  val akkaAgent = "com.typesafe.akka" %% "akka-agent" % "2.1.2"
+  val akkaActor = "com.typesafe.akka" %% "akka-actor" % "2.1.2"
   
   val akkaDeps = Seq(
     akkaAgent, akkaActor
   )
   
   // Spray
-  val sprayClient    = "io.spray"          %  "spray-client"   % "1.1-M7"
-  val sprayCan       = "io.spray"          %  "spray-can"      % "1.1-M7"      
-  val sprayHttp      = "io.spray"          %  "spray-http"     % "1.1-M7"
-  val sprayHttpx     = "io.spray"          %  "spray-httpx"    % "1.1-M7"
-  val sprayUtil      = "io.spray"          %  "spray-util"     % "1.1-M7"
+  val sprayClient = "io.spray" %  "spray-client" % "1.1-M7"
+  val sprayCan    = "io.spray" %  "spray-can"    % "1.1-M7"      
+  val sprayHttp   = "io.spray" %  "spray-http"   % "1.1-M7"
+  val sprayHttpx  = "io.spray" %  "spray-httpx"  % "1.1-M7"
+  val sprayUtil   = "io.spray" %  "spray-util"   % "1.1-M7"
 
   val sprayDeps = Seq(
     sprayClient,
@@ -90,6 +90,7 @@ object Dependencies {
   )
 
   // Testing dependencies
-  val akkaTestkit    = "com.typesafe.akka" %% "akka-testkit"   % "2.1.2" % "test"
-  val scalaTest      = "org.scalatest"     %  "scalatest_2.10" % "1.9.1" % "test"
+  val akkaTestkit = "com.typesafe.akka" %% "akka-testkit"                % "2.1.2" % "test"
+  val scalaTest   = "org.scalatest"     %  "scalatest_2.10"              % "1.9.1" % "test"
+  val scalaMock   = "org.scalamock"     %% "scalamock-scalatest-support" % "3.0.1" % "test"
 }
