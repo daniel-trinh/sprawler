@@ -1,6 +1,6 @@
-package biz.HttpStatus
+package biz.httpStatus
 
-import SpecificResponses
+import biz.httpStatus.specificResponses
 
 // Object for storing information about an Http Response.
 case class HttpResponse(statusCode: Int, body: String, headers: String) {

@@ -1,15 +1,11 @@
 package controllers
 
-import concurrent.duration._
-import biz.HttpPoller
-import libs.concurrent.Akka
-import play.api._
-import play.api.Play.current
 import play.api.mvc._
 import play.api.libs.concurrent.Execution.Implicits._
+
 import scala.concurrent.{ Promise, Future }
 
-object Application extends Controller with SimplePoller {
+object Application extends Controller {
 
   val aPromise = Promise[Int]()
 
@@ -38,18 +34,4 @@ object Application extends Controller with SimplePoller {
     Ok("Got request [" + request + "]")
   }
 
-}
-
-trait SimplePoller extends HttpPoller {
-
-  // Needs to be lazy to avoid null initialization order problems
-  lazy val system = Akka.system
-  lazy val hostName = "0.0.0.0"
-  lazy val port = 9000
-
-  // Schedule a periodic task to occur every 5 seconds, starting as soon as this schedule is registered
-  system.scheduler.schedule(initialDelay = 0 seconds, interval = 5 seconds) {
-    val paths = Seq("helloWorld", "goodbyeWorld")
-    pollService(paths)
-  }
 }

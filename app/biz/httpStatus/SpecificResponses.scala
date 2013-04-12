@@ -1,4 +1,4 @@
-package biz.HttpStatus.SpecificResponses
+package biz.httpStatus
 
 // for each link
 // store unfound links for crawling later
@@ -23,42 +23,39 @@ package biz.HttpStatus.SpecificResponses
 
 // crawling links in parallel? how to add a delay 
 
-case object Ok extends Success {
-  val statusCode = 200
+import biz.httpStatus.ResponseCategories
+
+object SpecificResponses {
+
+  case object Ok extends Success2xx {
+    val statusCode = 200
+  }
+
+  case object NoContent extends Success2xx {
+    val statusCode = 204
+  }
+
+  case object NotFound extends ClientError4xx {
+    val statusCode = 404
+  }
+
+  case object UnprocessableEntity extends ClientError4xx {
+    val statusCode = 422
+  }
+
+  case object BadGateway extends ServerError5xx {
+    val statusCode = 503
+  }
+
+  case object InternalError extends ServerError5xx {
+    val statusCode = 500
+  }
+
+  case class Informational(statusCode: Int) extends Informational1xx
+  case class Success(statusCode: Int) extends Success2xx
+  case class Redirect(statusCode: Int) extends Redirect3xx
+  case class ClientError(statusCode: Int) extends ClientError4xx
+  case class ServerError(statusCode: Int) extends ServerError5xx
+  case class Unknown(statusCode: Int) extends UnknownStatus
+
 }
-
-case object NoContent extends Success {
-  val statusCode = 204
-}
-
-case object NotFound extends ClientError {
-  val statusCode = 404
-}
-
-case object UnprocessableEntity extends ClientError {
-  val statusCode = 422
-}
-
-case object BadGateway extends ServerError {
-  val statusCode = 503
-}
-
-case object InternalError extends ServerError {
-  val statusCode = 500
-}
-
-case class Informational(statusCode: Int) extends Informational
-case class Success(statusCode: Int) extends Success
-case class Redirect(statusCode: Int) extends Redirect
-case class ClientError(statusCode: Int) extends ClientError
-case class ServerError(statusCode: Int) extends ServerError
-
-case class Unknown(statusCode: Int) extends Status {
-  val color = "purple"
-}
-
-// 2xx, green
-// 3xx, yellow-green? if redirect works
-// 3xx, yellow if redirect fails, red if infinite redirect
-// 4xx, red
-// 5xx, orange? server is down, might be up later?
