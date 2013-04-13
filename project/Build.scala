@@ -22,12 +22,15 @@ object ApplicationBuild extends Build {
     sonatype
   )
 
+  val scalacSettings = Seq("-Dscalac.patmat.analysisBudget=off")
+
   val main = play.Project(
     appName, appVersion, appDependencies
   ).settings(
     SbtScalariform.scalariformSettings ++
       (resolvers ++= appResolvers) ++
-      (scalaVersion in ThisBuild := "2.10.1") ++
+      (scalaVersion := "2.10.1") ++
+      (scalacOptions ++= scalacSettings) ++
       (ScalariformKeys.preferences := formattingPreferences): _*
   )
 
