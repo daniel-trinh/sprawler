@@ -22,7 +22,12 @@ object ApplicationBuild extends Build {
     sonatype
   )
 
-  val scalacSettings = Seq("-Dscalac.patmat.analysisBudget=off")
+  val scalacSettings = Seq("-Dscalac.patmat.analysisBudget=off", "-feature")
+
+  lazy val async = Project(
+    id   = "async",
+    base = file("../webcrawler/async")
+  )
 
   val main = play.Project(
     appName, appVersion, appDependencies
@@ -32,7 +37,7 @@ object ApplicationBuild extends Build {
       (scalaVersion := "2.10.1") ++
       (scalacOptions ++= scalacSettings) ++
       (ScalariformKeys.preferences := formattingPreferences): _*
-  )
+  ) aggregate(async) dependsOn(async)
 
   val formattingPreferences = {
     import scalariform.formatter.preferences._
@@ -78,16 +83,18 @@ object Dependencies {
   // Webcrawler related dependencies
   val crawlerDeps = Seq(
     "com.google.code.crawler-commons" % "crawler-commons"  % "0.2",
-    "com.google.guava"                % "guava"            % "r09"
+    "com.google.guava"                % "guava"            % "r09",
+    "org.jsoup"                       % "jsoup"            % "1.7.2"
   )
-  val Seq(crawlerCommons, guava) = crawlerDeps
+  val Seq(crawlerCommons, guava, jsoup) = crawlerDeps
 
   // Akka
   val akkaDeps = Seq(
     "com.typesafe.akka" %% "akka-agent" % V.Akka,
-    "com.typesafe.akka" %% "akka-actor" % V.Akka
+    "com.typesafe.akka" %% "akka-actor" % V.Akka,
+    "com.typesafe.akka" %% "akka-contrib" % V.Akka
   )
-  val Seq(akkaAgent, akkaActor) = akkaDeps
+  val Seq(akkaAgent, akkaActor, akkaContrib) = akkaDeps
 
   // Spray
   val sprayDeps = Seq(

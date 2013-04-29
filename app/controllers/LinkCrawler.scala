@@ -9,13 +9,10 @@ import play.api.libs.concurrent.Execution.Implicits._
 import scala.concurrent.{ Promise, Future }
 import scala.concurrent.duration._
 
-import biz.{ Crawler, CrawlerClient }
+import biz.{ Crawler, HttpCrawlerClient }
 
 object LinkCrawler extends Controller {
-  //  def deadLinks(domain: String) = WebSocket.async[JsValue] { request =>
-  //    Crawler(domain).crawl
-  //  }
-  def deadLinks(domain: String) = Action {
-    Ok("asdf")
+  def deadLinks(url: String) = WebSocket.async[JsValue] { request =>
+    Crawler(url).crawl
   }
 }
