@@ -114,11 +114,12 @@ class CrawlerActor(val channel: Concurrent.Channel[JsValue]) extends Actor with 
     case None => {
       val httpClient = HttpCrawlerClient(urlInfo.domain)
 
-      crawlerClients send { s: mutable.HashMap[String, HttpCrawlerClient] =>
-        s += ((urlInfo.topPrivateDomain, httpClient))
+      crawlerClients send { s =>
+        val tpd = urlInfo.topPrivateDomain
+        // avoid updating the hashtable if another client has already been added asynchronously
+        s.getOrElseUpdate(tpd, httpClient)
         s
       }
-
       httpClient
     }
   }
