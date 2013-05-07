@@ -30,8 +30,10 @@ import HttpConduit._
  *   HttpCrawlerClient("https://...")
  * }}}
  * @param hostName The base url, including protocol prefix (http:// or https://)
+ * @param portOverride Used to override the port that the underlying spray-client actor uses.
+ *                     Intended for testing.
  */
-case class HttpCrawlerClient(hostName: String) extends Client with CustomPipelines {
+case class HttpCrawlerClient(hostName: String, portOverride: Option[Int] = None) extends Client {
 
   def printResponse(response: Future[HttpResponse]) {
     async {
@@ -110,7 +112,8 @@ case class HttpCrawlerClient(hostName: String) extends Client with CustomPipelin
   }
 
   private def fetchRules: Future[BaseRobotRules] = {
-    fetchRobotRules(HttpRequest(GET, "/robots.txt"))
+    val request = HttpRequest(GET, "/robots.txt")
+    fetchRobotRules(request)
   }
 }
 
@@ -118,27 +121,32 @@ case class HttpCrawlerClient(hostName: String) extends Client with CustomPipelin
  * Spray-client boilerplate remover.
  * Given a hostName, will create code for performing SSL (https) or non-SSL (http) requests.
  */
-trait Client {
-  val hostName: String
-  val system = Akka.system
+trait Client extends CustomPipelines {
+  def hostName: String
+  def portOverride: Option[Int]
 
-  private val ioBridge = IOExtension(system).ioBridge()
+  lazy val system = Akka.system
+
+  lazy private val ioBridge = IOExtension(system).ioBridge()
 
   lazy private val sslOff = ConfigFactory.parseString("spray.can.client.ssl-encryption = off")
   lazy private val sslOn = ConfigFactory.parseString("spray.can.client.ssl-encryption = on")
 
-  private val (truncatedHost, port, sslEnabled, sslSetting) = if (hostName.startsWith("https://")) {
+  lazy val (truncatedHost, port, sslEnabled, sslSetting) = if (hostName.startsWith("https://")) {
     (hostName.replaceFirst("https://", ""), 443, true, sslOn
     )
   } else if (hostName.startsWith("http://")) {
     (hostName.replaceFirst("http://", ""), 80, false, sslOff)
   } else {
-    (hostName, 80, false, sslOff)
+    portOverride match {
+      case Some(portNum) => (hostName, portNum, false, sslOff)
+      case None          => (hostName, 80, false, sslOff)
+    }
   }
 
-  val (httpClient, conduit) = createClientAndConduit
+  lazy val (httpClient, conduit) = createClientAndConduit
 
-  val pipeline: HttpRequest => Future[HttpResponse] = {
+  lazy val pipeline: HttpRequest => Future[HttpResponse] = {
     sendReceive(conduit)
   }
 
@@ -156,26 +164,39 @@ trait CustomPipelines extends Throttler {
    * to specify their own conduit as needed. This is a boilerplate requirement in order to perform HTTP requests
    * using spray.client.
    */
-  val conduit: ActorRef
+  def conduit: ActorRef
+
+  /**
+   * Base url of the website being crawled.
+   * {{{
+   *   https://www.github.com/some/page (full url)
+   *   => https://www.github.com (hostName)
+   * }}}
+   */
+  def hostName: String
 
   /**
    * [[spray.can.client.HttpClient]] pipeline. Will only return the body of the response. Can throw a
    * [[biz.CustomExceptions.FailedHttpRequestError]] via parseBody.
    */
-  val bodyOnlyPipeline = {
+  lazy val bodyOnlyPipeline = {
     throttledSendReceive ~> parseBody
   }
 
   /**
    * [[spray.can.client.HttpClient]] pipeline. Intended to only be used for getting "robots.txt" files.
+   * Does not go through throttledSendReceive, since throttledSendReceive depends on figuring out the
+   * crawl delay from robots.txt (would result in a deadlock).
    */
-  val fetchRobotRules = {
-    bodyOnlyPipeline ~> parseRobotRules
+  lazy val fetchRobotRules = {
+    sendReceive(conduit) ~>
+      parseBody ~>
+      parseRobotRules
   }
 
   /**
    * Retrieve just the body of an [[spray.http.HttpResponse]].
-   * @param response
+   * @param response The future [[spray.http.HttpResponse]] to retrieve the body from.
    * @throws FailedHttpRequestError This is thrown if the HttpResponse is not a 1xx, 2xx, or 3xx status response.
    * @return future'd parsed response body
    */
@@ -197,11 +218,10 @@ trait CustomPipelines extends Throttler {
       {
         val p = Promise[Boolean]()
         async {
+          // Send a dummy object to throttler, and wait for an "ok" back from the throttler
+          // to perform an action
           await(throttler) ! PromiseRequest(p)
-        }
-
-        async {
-          await(p.future) // wait for the throttler to notify us that it's OK to perform another request
+          await(p.future)
           await(sendReceive(conduit)(request))
         }
       }
@@ -209,20 +229,19 @@ trait CustomPipelines extends Throttler {
 
   /**
    * Performs an HTTP request for the robots.txt file of siteDomain
-   * {{{
-   * }}}
-   * @param siteDomain A working base url to fetch robots.txt from
+   * @param robotsTxtBody The contents of hostName's robots.txt file
    * @return A future [[crawlercommons.robots.BaseRobotRules]]
    */
-  def parseRobotRules(siteDomain: Future[String]): Future[BaseRobotRules] = {
-    for {
-      domain <- siteDomain
-      crawler = HttpCrawlerClient(domain)
-      response = crawler.get("robots.txt", crawler.bodyOnlyPipeline)
-      res <- response
-    } yield {
-      createRobotRules(domain, SprayCan.userAgent, res.getBytes)
+  def parseRobotRules(robotsTxtBody: Future[String]): Future[BaseRobotRules] = {
+    async {
+      createRobotRules(hostName, SprayCan.Client.userAgent, await(robotsTxtBody).getBytes)
     }
+  }
+
+  // TODO: figure out how to check if a request is doable or not (based on robots.txt).
+  // have an undefined trait def for robot rule, and use that?
+  def isRequestable(rules: Future[BaseRobotRules]): Future[Boolean] = {
+    ???
   }
 
   /**
@@ -257,7 +276,9 @@ trait Throttler {
      * Receives a [[biz.PromiseRequest]], and complete's the promise with 'true'
      */
     def receive = {
-      case PromiseRequest(promise) => promise success true
+      case PromiseRequest(promise) => {
+        promise success true
+      }
     }
   }))
 
@@ -269,7 +290,6 @@ trait Throttler {
     val delayRate = await(crawlDelayRate)
     val throttler = Akka.system.actorOf(Props(new TimerBasedThrottler(delayRate)))
     throttler ! SetTarget(Some(forwarder))
-    // Set the target
     throttler
   }
 
