@@ -92,10 +92,13 @@ class CrawlerActor(val channel: Concurrent.Channel[JsValue]) extends Actor with 
     case info @ UrlInfo(url, crawlerTPD, depth) => {
       if (depth <= config.Crawler.maxDepth) {
         Try(info.topPrivateDomain) match {
-          case Failure(err) => streamError(s"There was a problem trying to parse the url: ${err.getMessage}")
+          case Failure(err) => streamError(s"""There was a problem trying to parse the url "${info.url}": ${err.getMessage}""")
           case Success(topDomain) => {
-            val client: HttpCrawlerClient = getClient(info)
-            client.robotRules
+            val client = getClient(info)
+            for (rules <- client.robotRules) {
+              rules.getSitemaps
+            }
+
           }
         }
       } else {
@@ -170,6 +173,9 @@ object CrawlerAgents {
    */
   val crawlerClients = Agent(new mutable.HashMap[String, HttpCrawlerClient])(Akka.system)
 
+  /**
+   * Closes agents -- necessary to prevent memory leaks
+   */
   def closeAgents() {
     visitedUrls.close()
     crawlerClients.close()
