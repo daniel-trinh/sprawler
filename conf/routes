@@ -4,20 +4,25 @@
 
 # Home page
 GET     /                           controllers.Application.index
-
 GET     /redeem/:id                 controllers.Application.redeem(id: Int)
-
 GET     /waiting                    controllers.Application.waiting
-
 GET     /echo                       controllers.Application.echo
-
 GET     /helloWorld                 controllers.Application.helloWorld
-
 GET     /goodbyeWorld               controllers.Application.goodbyeWorld
 
 # Web crawling code
 
 GET     /deadLinks                  controllers.LinkCrawler.deadLinks(domain: String)
 
+# Robots.txt
+GET     /robots.txt                 controllers.Assets.at(path="/public", file="robots.txt")
+
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)
+
+
+# Test routes
+GET     /test/redirect              controllers.TestDummy.redirect
+GET     /test/timeout               controllers.TestDummy.timeout
+GET     /test/notFound              controllers.TestDummy.notFound
+GET     /test/internalError         controllers.TestDummy.internalError

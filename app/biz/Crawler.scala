@@ -75,7 +75,7 @@ case class UrlInfo(url: String, crawlerTopPrivateDomain: String, depth: Int = 0)
   }
 
   val isWithinDepth: Boolean = {
-    depth <= config.Crawler.maxDepth
+    depth <= config.CrawlerConfig.maxDepth
   }
 
   val isCrawlable: Boolean = !isVisited && sameTPD
@@ -90,20 +90,22 @@ class CrawlerActor(val channel: Concurrent.Channel[JsValue]) extends Actor with 
 
   def receive = {
     case info @ UrlInfo(url, crawlerTPD, depth) => {
-      if (depth <= config.Crawler.maxDepth) {
+      if (depth <= config.CrawlerConfig.maxDepth) {
         Try(info.topPrivateDomain) match {
           case Failure(err) => streamError(s"""There was a problem trying to parse the url "${info.url}": ${err.getMessage}""")
           case Success(topDomain) => {
             val client = getClient(info)
-            for (rules <- client.robotRules) {
+            for {
+              tryRules <- client.robotRules
+              rules <- tryRules
+            } {
               rules.getSitemaps
             }
-
           }
         }
       } else {
         channel.push(JsObject(
-          Seq("complete" -> JsString(s"Maximum crawl depth has been reached. Depth: ${config.Crawler.maxDepth}"))
+          Seq("complete" -> JsString(s"Maximum crawl depth has been reached. Depth: ${config.CrawlerConfig.maxDepth}"))
         ))
         channel.eofAndEnd()
         closeAgents()

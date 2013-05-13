@@ -2,8 +2,8 @@ package biz.config
 
 import biz.BaseConfig
 
-object SprayCan extends BaseConfig {
-  private val config = base.getConfig("spray.can")
+object SprayCanConfig extends BaseConfig {
+  private val config = baseConfig.getConfig("spray.can")
 
   object Client {
     private val clientConfig = config.getConfig("client")

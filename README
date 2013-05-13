@@ -1,7 +1,7 @@
 ### Todo
 
-+ Figure out how to only download x kb from websites (truncate pages) to avoid crawling pages that are huge -- solution, use spray-client. if over limit, returns an error instead
-+ Parse robots.txt
-+ Impose a time limit between requests for a particular domain (2 seconds?)
-+ Create a regex or something else to parse out the domain name from a URL (must truncate subdomains as well) -- use guava parser
++ Needs testing: Figure out how to only download x kb from websites (truncate pages) to avoid crawling pages that are huge -- solution, use spray-client. if over limit, returns an error instead
++ Needs testing: Impose a time limit between requests for a particular domain (2 seconds?)
 + Figure out wtf depth is used for
++ Define API interface / json format for chunks to push to client
++ Implement API interface
