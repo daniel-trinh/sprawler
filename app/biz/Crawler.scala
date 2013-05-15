@@ -19,6 +19,11 @@ import crawlercommons.robots
 import com.google.common.net.InternetDomainName
 
 import java.net.URI
+import biz.config.CrawlerConfig
+
+// url not crawlable due to robots
+// timeout
+// 1xx, 2xx, 3xx, 4xx, 5xx
 
 /**
  * Entry point of Crawler.
@@ -28,6 +33,8 @@ case class Crawler(url: String) extends UrlHelper {
 
   private val uri = new URI(url)
   lazy val domain = uri.getHost
+
+  // Info of initial URL to start crawling
   lazy val crawlerUrlInfo = UrlInfo(url, calculateTPD(domain))(CrawlerAgents.visitedUrls)
 
   // TODO: this method will start the crawling process
@@ -49,7 +56,7 @@ case class Crawler(url: String) extends UrlHelper {
   }
 }
 
-case class UrlInfo(url: String, crawlerTopPrivateDomain: String, depth: Int = 0)(implicit visitedUrls: Agent[mutable.HashSet[String]]) extends UrlHelper {
+case class UrlInfo(url: String, crawlerTopPrivateDomain: String, depth: Int = CrawlerConfig.maxDepth)(implicit visitedUrls: Agent[mutable.HashSet[String]]) extends UrlHelper {
   // May report false negatives because of Agent behavior
   val isVisited: Boolean = visitedUrls().contains(url)
   lazy val domain: String = calculateDomain(url)

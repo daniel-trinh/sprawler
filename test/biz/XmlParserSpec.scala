@@ -1,3 +1,5 @@
+package biz
+
 import org.scalatest.{ WordSpec, FunSpec, BeforeAndAfter, BeforeAndAfterAll }
 import org.scalatest.matchers.ShouldMatchers
 import biz.XmlParser._

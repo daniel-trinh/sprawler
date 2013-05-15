@@ -36,7 +36,7 @@ import akka.contrib.throttle.Throttler.Rate
  * @param portOverride Used to override the port that the underlying spray-client actor uses.
  *                     Intended for testing.
  */
-case class HttpCrawlerClient(hostName: String, portOverride: Option[Int] = None) extends Client {
+case class HttpCrawlerClient(hostName: String, portOverride: Option[Int] = None) extends SprayClientHelper {
 
   /**
    * Useful for debugging the response body of an HttpResponse

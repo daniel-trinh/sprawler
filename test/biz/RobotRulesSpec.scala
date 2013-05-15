@@ -1,3 +1,5 @@
+package biz
+
 import biz.config.CrawlerConfig
 import org.scalatest._
 import biz.RobotRules

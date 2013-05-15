@@ -6,15 +6,15 @@ import play.libs.Akka
 import scala.concurrent.Future
 import scala.util.Try
 import spray.can.client.HttpClient
-import spray.client.HttpConduit
 import spray.http.{ HttpResponse, HttpRequest }
 import spray.io.IOExtension
+import spray.client.HttpConduit
 
 /**
  * Spray-client boilerplate remover.
  * Given a hostName, will create code for performing SSL (https) or non-SSL (http) requests.
  */
-trait Client extends HttpClientPipelines with BaseConfig {
+trait SprayClientHelper extends HttpClientPipelines with BaseConfig {
   def hostName: String
   def portOverride: Option[Int]
 
