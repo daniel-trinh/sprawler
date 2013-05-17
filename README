@@ -5,3 +5,4 @@
 + Figure out wtf depth is used for
 + Define API interface / json format for chunks to push to client
 + Implement API interface
++ add build properties file for sbt version

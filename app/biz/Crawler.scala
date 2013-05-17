@@ -34,61 +34,17 @@ case class Crawler(url: String) extends UrlHelper {
   private val uri = new URI(url)
   lazy val domain = uri.getHost
 
-  // Info of initial URL to start crawling
-  lazy val crawlerUrlInfo = UrlInfo(url, calculateTPD(domain))(CrawlerAgents.visitedUrls)
-
   // TODO: this method will start the crawling process
-  def crawl: Future[(Iteratee[JsValue, _], Enumerator[JsValue])] = {
+  def crawl: Future[Enumerator[JsValue]] = {
     val enumerator = Concurrent.unicast[JsValue] { c =>
       play.Logger.info(s"Crawler started: $url")
       val crawlerActor = Akka.system.actorOf(Props(new CrawlerActor(c)))
-
+      // Info of initial URL to start crawling
+      lazy val crawlerUrlInfo = UrlInfo(url, calculateTPD(domain))(CrawlerAgents.visitedUrls)
       crawlerActor ! crawlerUrlInfo
     }
 
-    val iteratee = Iteratee.foreach[JsValue] { event =>
-      play.Logger.info(s"received: $event")
-    }.mapDone { event =>
-      play.Logger.info(s"end: $event")
-    }
-
-    Future(iteratee, enumerator)
-  }
-}
-
-case class UrlInfo(url: String, crawlerTopPrivateDomain: String, depth: Int = CrawlerConfig.maxDepth)(implicit visitedUrls: Agent[mutable.HashSet[String]]) extends UrlHelper {
-  // May report false negatives because of Agent behavior
-  val isVisited: Boolean = visitedUrls().contains(url)
-  lazy val domain: String = calculateDomain(url)
-  val topPrivateDomain: String = calculateTopPrivateDomain(domain)
-
-  /**
-   * Tests if the provided url's UrlHelper matches the base crawler's UrlHelper
-   * {{{
-   *  val url = UrlInfo("https://www.github.com/some/path", "github.com")
-   *  url.sameTPD
-   *  => true
-   *
-   *  val url = UrlInfo("https://www.github.com/some/path", "google.com")
-   *  url.sameTPD
-   *  => false
-   * }}}
-   */
-  val sameTPD: Boolean = {
-    if (topPrivateDomain == crawlerTopPrivateDomain)
-      true
-    else
-      false
-  }
-
-  val isWithinDepth: Boolean = {
-    depth <= config.CrawlerConfig.maxDepth
-  }
-
-  val isCrawlable: Boolean = !isVisited && sameTPD
-
-  private def calculateTopPrivateDomain(domain: String): String = {
-    InternetDomainName.fromLenient(domain).topPrivateDomain().name()
+    Future(enumerator)
   }
 }
 
@@ -101,13 +57,11 @@ class CrawlerActor(val channel: Concurrent.Channel[JsValue]) extends Actor with 
         Try(info.topPrivateDomain) match {
           case Failure(err) => streamError(s"""There was a problem trying to parse the url "${info.url}": ${err.getMessage}""")
           case Success(topDomain) => {
-            val client = getClient(info)
-            for {
-              tryRules <- client.robotRules
-              rules <- tryRules
-            } {
-              rules.getSitemaps
-            }
+            channel.push(
+              JsObject(
+                Seq("test" -> JsString("123"))
+              )
+            )
           }
         }
       } else {
@@ -191,4 +145,39 @@ object CrawlerAgents {
   }
 }
 
-case class CrawlerSocket[A](e: Enumerator[A])
+case class Start(url: String)
+case class UrlInfo(url: String, crawlerTopPrivateDomain: String, depth: Int = CrawlerConfig.maxDepth)(implicit visitedUrls: Agent[mutable.HashSet[String]]) extends UrlHelper {
+  // May report false negatives because of Agent behavior
+  val isVisited: Boolean = visitedUrls().contains(url)
+  lazy val domain: String = calculateDomain(url)
+  val topPrivateDomain: String = calculateTopPrivateDomain(domain)
+
+  /**
+   * Tests if the provided url's UrlHelper matches the base crawler's UrlHelper
+   * {{{
+   *  val url = UrlInfo("https://www.github.com/some/path", "github.com")
+   *  url.sameTPD
+   *  => true
+   *
+   *  val url = UrlInfo("https://www.github.com/some/path", "google.com")
+   *  url.sameTPD
+   *  => false
+   * }}}
+   */
+  val sameTPD: Boolean = {
+    if (topPrivateDomain == crawlerTopPrivateDomain)
+      true
+    else
+      false
+  }
+
+  val isWithinDepth: Boolean = {
+    depth <= config.CrawlerConfig.maxDepth
+  }
+
+  val isCrawlable: Boolean = !isVisited && sameTPD
+
+  private def calculateTopPrivateDomain(domain: String): String = {
+    InternetDomainName.fromLenient(domain).topPrivateDomain().name()
+  }
+}
