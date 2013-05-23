@@ -1,7 +1,7 @@
 package biz
 
 import biz.config.CrawlerConfig
-import biz.CustomExceptions._
+import biz.CrawlerExceptions._
 import org.scalatest._
 import org.scalatest.matchers.ShouldMatchers
 import play.api.test.Helpers._
@@ -14,6 +14,7 @@ import scala.Some
 import scala.util.{ Try, Failure, Success }
 import spray.can.client.ClientSettings
 import spray.client.ConduitSettings
+import biz.http.client.HttpCrawlerClient
 
 class HttpCrawlerClientSpec extends WordSpec with BeforeAndAfter with ShouldMatchers with PrivateMethodTester {
   // Launch play app for Akka.system
@@ -57,7 +58,7 @@ class HttpCrawlerClientSpec extends WordSpec with BeforeAndAfter with ShouldMatc
 
         res.isFailure should be === true
 
-        res should be === Failure(UrlNotAllowed("https://github.com", "/", UrlNotAllowed.RobotRuleDisallowed))
+        res should be === Failure(UrlNotAllowedException("https://github.com", "/", UrlNotAllowedException.RobotRuleDisallowed))
       }
       "handle timeouts" in {
         localHttpTest { client =>

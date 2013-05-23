@@ -1,4 +1,4 @@
-package biz
+package biz.http.client
 
 import akka.actor.{ Terminated, Status, ActorRef }
 import spray.client._

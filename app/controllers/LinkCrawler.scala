@@ -9,10 +9,10 @@ import play.api.libs.concurrent.Execution.Implicits._
 import scala.concurrent.{ Promise, Future }
 import scala.concurrent.duration._
 
-import biz.{ Crawler, HttpCrawlerClient }
 import akka.util.Timeout
 import play.api.libs.iteratee.{ Iteratee, Concurrent, Enumerator }
 import play.api.libs.EventSource
+import biz.crawler.Crawler
 
 object LinkCrawler extends Controller {
   /**
@@ -22,14 +22,14 @@ object LinkCrawler extends Controller {
    */
   def deadLinks(url: String) = WebSocket.async[JsValue] { request =>
 
+    // TODO: fix data race problem with actor starting crawling before enumerator is received
     val iteratee = Iteratee.foreach[JsValue] { event =>
       play.Logger.info(s"received: $event")
     }.mapDone { event =>
       play.Logger.info(s"end: $event")
     }
-    Crawler(url).crawl map { enumerator =>
-      (iteratee, enumerator)
-    }
+    val crawler = new Crawler(url)
+    Future.successful(iteratee, crawler.jsStream)
   }
 
   /**
@@ -37,11 +37,8 @@ object LinkCrawler extends Controller {
    * @param url
    */
   def deadLinksSSE(url: String) = Action {
-    Async {
-      Crawler(url).crawl map { enumerator =>
-        Ok.stream(enumerator through EventSource())
-      }
-    }
+    // TODO: fix data race problem with actor starting crawling before enumerator is received
+    val crawler = new Crawler(url)
+    Ok.stream(crawler.jsStream through EventSource() andThen Enumerator.eof).as("text/event-stream")
   }
-
 }

@@ -2,7 +2,7 @@ package biz
 
 import biz.config.CrawlerConfig
 import org.scalatest._
-import biz.RobotRules
+import biz.http.client.RobotRules
 
 class RobotRulesSpec extends WordSpec with ShouldMatchers {
   "RobotRules" when {

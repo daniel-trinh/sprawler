@@ -1,10 +1,11 @@
-package biz
+package biz.http.client
 
 import akka.actor._
 import akka.contrib.throttle._
 import akka.contrib.throttle.Throttler._
 
-import biz.CustomExceptions._
+import biz.CrawlerExceptions._
+import biz.{ XmlParser }
 import biz.config.CrawlerConfig
 import crawlercommons.robots.{ BaseRobotRules, SimpleRobotRulesParser }
 
@@ -15,13 +16,9 @@ import scala.concurrent.{ Promise, Future }
 import scala.async.Async.{ async, await }
 import scala.concurrent.duration._
 
-import spray.can.client.HttpClient
-import spray.client._
-import spray.io._
 import spray.http._
 import HttpMethods._
 import scala.util.{ Try, Success, Failure }
-import spray.util.Reply
 import scala.Some
 import spray.http.HttpResponse
 import akka.contrib.throttle.Throttler.SetTarget
@@ -108,7 +105,7 @@ case class HttpCrawlerClient(hostName: String, portOverride: Option[Int] = None)
   }
 
   /**
-   * Retrieves the [[crawlercommons.robots.BaseRobotRules]] from this [[biz.HttpCrawlerClient]]'s domain.
+   * Retrieves the [[crawlercommons.robots.BaseRobotRules]] from this [[biz.http.client.HttpCrawlerClient]]'s domain.
    */
   lazy val robotRules: Future[Try[BaseRobotRules]] = {
     fetchRules
@@ -175,7 +172,7 @@ trait Throttler {
    */
   val forwarder = Akka.system.actorOf(Props(new Actor {
     /**
-     * Receives a [[biz.PromiseRequest]], and complete's the promise with 'true'
+     * Receives a [[biz.http.client.PromiseRequest]], and complete's the promise with 'true'
      */
     def receive = {
       case PromiseRequest(promise) => {
@@ -186,7 +183,7 @@ trait Throttler {
 
   /**
    * [[akka.contrib.throttle.TimerBasedThrottler]] that throttles messages sent to forwarder.
-   * Delay rate is determined by [[biz.Throttler]].crawlDelayRate
+   * Delay rate is determined by [[biz.http.client.Throttler]].crawlDelayRate
    */
   val throttler: Future[ActorRef] = async {
     val delayRate = await(crawlDelayRate)

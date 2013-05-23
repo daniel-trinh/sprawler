@@ -42,13 +42,10 @@ object ApplicationBuild extends Build {
   val formattingPreferences = {
     import scalariform.formatter.preferences._
     FormattingPreferences()
-      .setPreference(DoubleIndentClassDeclaration, false)
       .setPreference(PreserveDanglingCloseParenthesis, true)
       .setPreference(AlignParameters, true)
       .setPreference(AlignSingleLineCaseStatements, true)
       .setPreference(AlignSingleLineCaseStatements.MaxArrowIndent, 40)
-      .setPreference(DoubleIndentClassDeclaration, true)
-      .setPreference(PreserveDanglingCloseParenthesis, true)
       .setPreference(DoubleIndentClassDeclaration, true)
   }
 }

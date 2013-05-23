@@ -1,17 +1,23 @@
-package biz
+package biz.http.client
 
 import akka.actor.{ Status, ActorRef }
+import akka.spray.{ UnregisteredActorRef, RefUtils }
+
 import biz.config.SprayCanConfig
-import biz.CustomExceptions.{ UrlNotAllowed, FailedHttpRequestError }
+import biz.CrawlerExceptions.{ UrlNotAllowedException, FailedHttpRequestException }
 import biz.concurrency.FutureImplicits._
+import biz.http.client._
+
 import crawlercommons.robots.BaseRobotRules
+
 import scala.async.Async._
 import scala.concurrent.{ Promise, Future }
 import scala.util.{ Failure, Success, Try }
+
 import spray.client.HttpConduit._
 import spray.http.{ HttpRequest, HttpResponse }
+
 import play.api.libs.concurrent.Execution.Implicits._
-import akka.spray.{ UnregisteredActorRef, RefUtils }
 
 trait HttpClientPipelines extends Throttler {
 
@@ -35,7 +41,7 @@ trait HttpClientPipelines extends Throttler {
 
   /**
    * [[spray.can.client.HttpClient]] pipeline. Will only return the body of the response. Can throw a
-   * [[biz.CustomExceptions.FailedHttpRequestError]] via parseBody.
+   * [[biz.CrawlerExceptions.FailedHttpRequestException]] via parseBody.
    */
   lazy val bodyOnlyPipeline = {
     throttledSendReceive ~> parseBody
@@ -56,7 +62,7 @@ trait HttpClientPipelines extends Throttler {
   /**
    * Retrieve just the body of an [[spray.http.HttpResponse]].
    * @param response The future [[spray.http.HttpResponse]] to retrieve the body from.
-   * @throws FailedHttpRequestError This is thrown if the HttpResponse is not a 1xx, 2xx, or 3xx status response.
+   * @throws FailedHttpRequestException This is thrown if the HttpResponse is not a 1xx, 2xx, or 3xx status response.
    * @return future'd parsed response body
    */
   def parseBody(response: Future[Try[HttpResponse]]): Future[Try[String]] = {
@@ -65,7 +71,7 @@ trait HttpClientPipelines extends Throttler {
         if (r.status.isSuccess) {
           r.entity.asString
         } else
-          throw new FailedHttpRequestError("")
+          throw new FailedHttpRequestException(r.status.value, r.status.reason, r.status.defaultMessage)
       }
     }
   }
@@ -144,10 +150,10 @@ trait HttpClientPipelines extends Throttler {
         await(sendReceiveTry(conduit)(request))
       } else {
         Failure(
-          UrlNotAllowed(
+          UrlNotAllowedException(
             host = hostName,
             path = request.uri,
-            message = UrlNotAllowed.RobotRuleDisallowed)
+            message = UrlNotAllowedException.RobotRuleDisallowed)
         )
       }
     }

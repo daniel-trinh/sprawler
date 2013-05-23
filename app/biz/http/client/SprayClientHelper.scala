@@ -1,4 +1,4 @@
-package biz
+package biz.http.client
 
 import akka.actor.{ Props, ActorRef }
 import com.typesafe.config.ConfigFactory
@@ -9,6 +9,7 @@ import spray.can.client.HttpClient
 import spray.http.{ HttpResponse, HttpRequest }
 import spray.io.IOExtension
 import spray.client.HttpConduit
+import biz.BaseConfig
 
 /**
  * Spray-client boilerplate remover.

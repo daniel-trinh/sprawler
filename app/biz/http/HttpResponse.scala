@@ -48,16 +48,20 @@ case class HttpResponse(statusCode: Int, body: String, headers: String) {
       case 500 => InternalServerError
       case 503 => BadGateway
       case num => {
-        if (num <= 200 && num > 100) {
-          Informational(num)
-        } else if (num < 300 && num >= 200) {
-          Success(num)
-        } else if (num < 400 && num >= 300) {
-          Redirect(num)
-        } else if (num < 500 && num >= 400) {
-          ClientError(num)
-        } else if (num < 600 && num >= 500) {
-          ServerError(num)
+        if (num > 100) {
+          if (num < 200) {
+            Informational(num)
+          } else if (num < 300) {
+            Success(num)
+          } else if (num < 400) {
+            Redirect(num)
+          } else if (num < 500) {
+            ClientError(num)
+          } else if (num < 600) {
+            ServerError(num)
+          } else {
+            Unknown(num)
+          }
         } else {
           Unknown(num)
         }
