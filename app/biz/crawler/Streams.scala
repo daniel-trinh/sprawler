@@ -13,7 +13,7 @@ trait Streams {
 
   def channel: Concurrent.Channel[JsValue]
 
-  def streamJson(json: JsValue, eofAndEnd: Boolean = true) {
+  def streamJson(json: JsValue, eofAndEnd: Boolean = false) {
     channel push json
 
     if (eofAndEnd) {
@@ -25,7 +25,7 @@ trait Streams {
     streamJson(JsObject(Seq("error" -> jsError)), eofAndEnd)
   }
 
-  def streamJsResponse(fromUrl: String, toUrl: String, response: HttpResponse, eofAndEnd: Boolean = true) {
+  def streamJsResponse(fromUrl: String, toUrl: String, response: HttpResponse, eofAndEnd: Boolean = false) {
     streamJson(responseToJson(fromUrl, toUrl, response), eofAndEnd)
   }
 
@@ -35,12 +35,12 @@ trait Streams {
    *
    * @param error The throwable to convert into json and stream.
    */
-  def streamJsErrorFromException(error: Throwable) {
+  def streamJsonErrorFromException(error: Throwable) {
     error match {
       // NOTE: this code is left in this verbose manner, because Json.toJson doesn't work
       // when trying to use this shortened version, due to the type inference getting generalized to
       // "Throwable": http://stackoverflow.com/a/8481924/1093160
-      case error @ UnprocessableUrlException(_, _, _) =>
+      case error @ UnprocessableUrlException(_, _, _, _) =>
         streamJsonError(Json.toJson(error))
       case error @ FailedHttpRequestException(_, _, _, _) =>
         streamJsonError(Json.toJson(error))

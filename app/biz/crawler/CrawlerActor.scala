@@ -24,14 +24,14 @@ class CrawlerActor(val channel: Concurrent.Channel[JsValue]) extends Actor with 
       if (depth <= CrawlerConfig.maxDepth) {
         info.topPrivateDomain match {
           case Failure(err) =>
-            streamJsonError(Json.toJson(UnprocessableUrlException(info.toUrl, err.getMessage)))
+            streamJsonError(Json.toJson(UnprocessableUrlException(info.fromUrl, info.toUrl, err.getMessage)))
           case Success(topDomain) =>
             val client = getClient(topDomain, info.domain)
             async {
               val result = await(client.get(info.path))
               result match {
                 case Failure(err) =>
-                  streamJsErrorFromException(err)
+                  streamJsonErrorFromException(err)
                 case Success(response) =>
                   streamJsResponse(fromUrl, toUrl, response)
               }

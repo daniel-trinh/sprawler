@@ -25,7 +25,8 @@ object CrawlerExceptions {
     )(UrlNotAllowedException.apply, unlift(UrlNotAllowedException.unapply))
 
     implicit val unprocessableUrl = (
-      (__ \ "url").format[String] and
+      (__ \ "fromUrl").format[String] and
+      (__ \ "toUrl").format[String] and
       (__ \ "message").format[String] and
       (__ \ "errorType").format[String]
     )(UnprocessableUrlException.apply, unlift(UnprocessableUrlException.unapply))
@@ -68,12 +69,14 @@ object CrawlerExceptions {
 
   /**
    * Throw this if a URL cannot be crawled due to a malformed URL.
-   * @param url
+   * @param fromUrl
+   * @param toUrl
    * @param message
    * @param errorType
    */
   case class UnprocessableUrlException(
-    url: String,
+    fromUrl: String,
+    toUrl: String,
     message: String,
     errorType: String = "unprocessable_url") extends CrawlerException(message)
 

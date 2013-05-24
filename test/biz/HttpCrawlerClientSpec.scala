@@ -32,7 +32,7 @@ class HttpCrawlerClientSpec extends WordSpec with BeforeAndAfter with ShouldMatc
     ".get(path)" should {
       // TODO: use fake stubbed endpoints instead of real ones
       "fetch a simple https:// url" in {
-        val request = HttpCrawlerClient("https://www.google.com").get("/")
+        val request = HttpCrawlerClient("https://www.google.com").get("/robots.txt")
         val res = Await.result(request, 5.seconds)
 
         res.isSuccess should be === true
@@ -43,7 +43,7 @@ class HttpCrawlerClientSpec extends WordSpec with BeforeAndAfter with ShouldMatc
       }
       "fetch a simple http:// url" in {
         val client = HttpCrawlerClient("http://www.yahoo.com")
-        val request = client.get("/")
+        val request = client.get("/robots.txt")
         val res = Await.result(request, 5.seconds)
 
         res.isSuccess should be === true

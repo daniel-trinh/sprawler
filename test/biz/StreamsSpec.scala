@@ -1,12 +1,100 @@
 package biz
 
-/**
- * Created with IntelliJ IDEA.
- * User: daniel
- * Date: 5/22/13
- * Time: 11:02 PM
- * To change this template use File | Settings | File Templates.
- */
-class StreamsSpec {
+import org.scalatest._
+import biz.crawler.Streams
+import scala.collection.mutable
+import play.api.libs.iteratee.{ Input, Iteratee, Concurrent }
+import play.api.libs.json.{ JsNumber, JsObject, JsString, JsValue }
+import play.api.libs.iteratee.Concurrent.Channel
+import spray.http.HttpResponse
+import biz.CrawlerExceptions.UrlNotAllowedException
 
+class StreamsSpec extends WordSpec with ShouldMatchers with BeforeAndAfter {
+  "Streams" when {
+
+    var dummyStream: DummyStream = null
+    before {
+      dummyStream = new DummyStream
+    }
+    ".streamJson" should {
+      "push json and not close the channel" in {
+        dummyStream.streamJson(JsString("Input"))
+        dummyStream.channel.bucket should be === mutable.ArrayBuffer(JsString("Input"))
+      }
+    }
+
+    ".streamJsResponse" should {
+      "push an http response and not close the channel" in {
+        val response = HttpResponse()
+        dummyStream.streamJsResponse("url1", "url2", HttpResponse())
+        dummyStream.channel.bucket should be === mutable.ArrayBuffer(
+          JsObject(
+            Seq(
+              "from_url" -> JsString("url1"),
+              "to_url" -> JsString("url2"),
+              "status" -> JsNumber(response.status.value),
+              "reason" -> JsString(response.status.reason)
+            )
+          )
+        )
+      }
+    }
+
+    ".streamJsonError" should {
+      "push json and close the channel" in {
+        dummyStream.streamJsonError(JsString("error happened"))
+        dummyStream.channel.bucket should be === mutable.ArrayBuffer(
+          JsObject(
+            Seq("error" -> JsString("error happened"))
+          ),
+          JsString("EOF")
+        )
+      }
+    }
+    ".streamJsonErrorFromException" should {
+      "push an exception, convert it to json, and close the channel" in {
+        dummyStream.streamJsonErrorFromException(UrlNotAllowedException("host", "path", "url sucks"))
+        dummyStream.channel.bucket should be === mutable.ArrayBuffer(
+          JsObject(
+            Seq(
+              "error" -> JsObject(Seq(
+                "host" -> JsString("host"),
+                "path" -> JsString("path"),
+                "message" -> JsString("url sucks"),
+                "errorType" -> JsString("url_not_allowed")
+              )
+              ))
+          ),
+          JsString("EOF")
+        )
+      }
+    }
+  }
+}
+
+/**
+ * Used for testing, implements the methods for Channel.
+ * @param bucket Contains values pushed into the channel
+ * @param closed Whether or not the channel has received an Input.EOF
+ */
+class DummyChannel(
+    var bucket: mutable.ArrayBuffer[JsValue],
+    var closed: Boolean = false) extends Channel[JsValue] {
+  def push(chunk: Input[JsValue]) {
+    chunk match {
+      case Input.El(e) => bucket.append(e)
+      case Input.Empty => bucket
+      case Input.EOF   => bucket.append(JsString("EOF"))
+    }
+  }
+  def end() {
+    closed = true
+  }
+  def end(e: Throwable) {
+    ()
+  }
+}
+
+class DummyStream extends Streams {
+  lazy val channel = new DummyChannel(new mutable.ArrayBuffer[JsValue]())
 }

@@ -65,7 +65,7 @@ class Crawler(url: String) extends UrlHelper with Streams {
 
     calculateTPD(domain) match {
       case Failure(error) =>
-        streamJsErrorFromException(error)
+        streamJsonErrorFromException(UnprocessableUrlException(url, url, error.getMessage))
       case Success(tpd) =>
         lazy val crawlerUrlInfo = UrlInfo(url, url, tpd)(CrawlerAgents.visitedUrls)
         crawlerActor ! crawlerUrlInfo
@@ -77,7 +77,7 @@ class Crawler(url: String) extends UrlHelper with Streams {
 trait UrlHelper {
   def calculateTPD(domain: String): Try[String] = {
     Try(InternetDomainName.fromLenient(domain).topPrivateDomain().name()) match {
-      case Failure(error)   => Failure(UnprocessableUrlException(domain, error.getMessage))
+      case Failure(error)   => Failure(error)
       case tpd @ Success(_) => tpd
     }
   }
@@ -124,23 +124,27 @@ case class Links(links: List[String])
  * @param visitedUrls
  */
 case class UrlInfo(fromUrl: String, toUrl: String, crawlerTopPrivateDomain: String, depth: Int = CrawlerConfig.maxDepth)(implicit visitedUrls: Agent[mutable.HashSet[String]]) extends UrlHelper {
-  // May report false negatives because of Agent behavior
-  val isVisited: Boolean = visitedUrls().contains(toUrl)
-  lazy val domain: String = calculateDomain(toUrl)
+
   private val prefixLength = {
     if (toUrl.startsWith("https://"))
       8
     else if (toUrl.startsWith("http://"))
       7
-    else throw new UnprocessableUrlException(toUrl, s"Url must start with http:// or https://.")
+    else throw new UnprocessableUrlException(fromUrl, toUrl, s"Url must start with http:// or https://.")
   }
 
   lazy val path: String = toUrl.substring(domain.length + prefixLength, toUrl.length)
+  // May report false negatives because of Agent behavior
+  val isVisited: Boolean = visitedUrls().contains(toUrl)
+  lazy val domain: String = calculateDomain(toUrl)
 
   val topPrivateDomain: Try[String] = calculateTPD(domain)
 
   /**
-   * Tests if the provided url's UrlHelper matches the base crawler's UrlHelper
+   * Tests if the provided url's UrlHelper matches the base crawler's UrlHelper.
+   * TPDs are used similar to how SHA's are used to identify code states in git.
+   * Used to check if toUrl is on the same domain as the origin URL.
+   *
    * {{{
    *  val url = UrlInfo("https://www.github.com/some/path", "github.com")
    *  url.sameTPD
