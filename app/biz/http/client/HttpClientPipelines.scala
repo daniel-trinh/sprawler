@@ -15,9 +15,11 @@ import scala.concurrent.{ Promise, Future }
 import scala.util.{ Failure, Success, Try }
 
 import spray.client.HttpConduit._
-import spray.http.{ HttpRequest, HttpResponse }
+import spray.http.{ StatusCodes, HttpRequest, HttpResponse }
 
 import play.api.libs.concurrent.Execution.Implicits._
+import scala.annotation.tailrec
+import spray.http.HttpHeaders.Location
 
 trait HttpClientPipelines extends Throttler {
 
@@ -32,10 +34,10 @@ trait HttpClientPipelines extends Throttler {
    * Base url of the website being crawled.
    * {{{
    *   https://www.github.com/some/page (full url)
-   *   => https://www.github.com (hostName)
+   *   => www.github.com (domain)
    * }}}
    */
-  def hostName: String
+  def domain: String
 
   def robotRules: Future[Try[BaseRobotRules]]
 
@@ -87,7 +89,7 @@ trait HttpClientPipelines extends Throttler {
           // Send a dummy object to throttler, and wait for an "ok" back from the throttler
           // to perform an action
           val tryRules = await(robotRules)
-          val url = s"${hostName}${request.uri}"
+          val url = s"${domain}${request.uri}"
 
           // Check to make sure doing a request on this URL is allowed (based on the domain's robot rules)
           val asdf = tryRules match {
@@ -104,13 +106,13 @@ trait HttpClientPipelines extends Throttler {
 
   /**
    * Performs an HTTP request for the robots.txt file of siteDomain
-   * @param robotsTxtBody The contents of hostName's robots.txt file
+   * @param robotsTxtBody The contents of domain's robots.txt file
    * @return A future [[crawlercommons.robots.BaseRobotRules]]
    */
   def parseRobotRules(robotsTxtBody: Future[Try[HttpResponse]]): Future[Try[BaseRobotRules]] = {
     async {
       await(robotsTxtBody) map { response =>
-        RobotRules.create(hostName, SprayCanConfig.Client.userAgent, response.entity.asString)
+        RobotRules.create(domain, SprayCanConfig.Client.userAgent, response.entity.asString)
       }
     }
   }
@@ -151,7 +153,7 @@ trait HttpClientPipelines extends Throttler {
       } else {
         Failure(
           UrlNotAllowedException(
-            host = hostName,
+            host = domain,
             path = request.uri,
             message = UrlNotAllowedException.RobotRuleDisallowed)
         )

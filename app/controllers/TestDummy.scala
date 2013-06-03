@@ -17,7 +17,6 @@ object TestDummy extends Controller {
 
   /**
    * This route will never finish.
-   * @return
    */
   def timeout = TestAction(parse.anyContent) { request =>
     val aPromise = Promise[Int]()
@@ -28,19 +27,42 @@ object TestDummy extends Controller {
     }
   }
 
+  /**
+   * Renders a 404.
+   */
   def notFound = TestAction(parse.anyContent) { request =>
     NotFound
   }
 
+  /**
+   * Renders a 500.
+   */
   def internalError = TestAction(parse.anyContent) { request =>
     InternalServerError
   }
 
+  /**
+   * Renders a 301, redirecting once to a valid route.
+   */
   def redirect = TestAction(parse.anyContent) { implicit request =>
-
     MovedPermanently(routes.Application.echo().absoluteURL())
   }
 
+  /**
+   * Recursively redirects to self route.
+   */
+  def infiniteRedirect = TestAction(parse.anyContent) { implicit request =>
+    MovedPermanently(routes.TestDummy.infiniteRedirect().absoluteURL())
+  }
+
+  /**
+   * Renders a 404 if Play is not deployed in Test or Dev mode, otherwise executes the action
+   * normally.
+   *
+   * @param bp How to parse the request body
+   * @param f A function that returns a [[play.api.mvc.Result]]
+   * @tparam A The type of content in the request
+   */
   private def TestAction[A](bp: BodyParser[A])(f: Request[A] => Result): Action[A] = {
     Action(bp) { request =>
       if (!Play.isTest) {

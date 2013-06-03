@@ -2,6 +2,7 @@ package biz
 
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
+import biz.config.CrawlerConfig
 
 /**
  * Exceptions used for this webcrawler project
@@ -30,6 +31,20 @@ object CrawlerExceptions {
       (__ \ "message").format[String] and
       (__ \ "errorType").format[String]
     )(UnprocessableUrlException.apply, unlift(UnprocessableUrlException.unapply))
+
+    implicit val redirectLimitReached = (
+      (__ \ "fromUrl").format[String] and
+      (__ \ "toUrl").format[String] and
+      (__ \ "message").format[String] and
+      (__ \ "maxRedirects").format[Int] and
+      (__ \ "errorType").format[String]
+    )(RedirectLimitReachedException.apply, unlift(RedirectLimitReachedException.unapply))
+
+    implicit val missingRedirectUrl = (
+      (__ \ "fromUrl").format[String] and
+      (__ \ "message").format[String] and
+      (__ \ "errorType").format[String]
+    )(MissingRedirectUrlException.apply, unlift(MissingRedirectUrlException.unapply))
 
     implicit val unknown = (
       (__ \ "message").format[String] and
@@ -79,6 +94,30 @@ object CrawlerExceptions {
     toUrl: String,
     message: String,
     errorType: String = "unprocessable_url") extends CrawlerException(message)
+
+  object UnprocessableUrlException {
+    val MissingHttpPrefix = "Url must start with https:// or http://"
+  }
+
+  /**
+   * Throw this if the maximum redirects has been reached when followin 3xx redirects
+   * @param fromUrl
+   * @param toUrl
+   * @param message
+   * @param maxRedirects
+   * @param errorType
+   */
+  case class RedirectLimitReachedException(
+    fromUrl: String,
+    toUrl: String,
+    message: String = "Redirect limit reached",
+    maxRedirects: Int = CrawlerConfig.maxRedirects,
+    errorType: String = "redirect_limit_reached") extends CrawlerException(message)
+
+  case class MissingRedirectUrlException(
+    fromUrl: String,
+    message: String,
+    errorType: String = "missing_redirect_url") extends CrawlerException(message)
 
   /**
    * Throw this if you have no idea what happened.

@@ -5,7 +5,7 @@ import akka.contrib.throttle._
 import akka.contrib.throttle.Throttler._
 
 import biz.CrawlerExceptions._
-import biz.{ XmlParser }
+import biz.XmlParser
 import biz.config.CrawlerConfig
 import crawlercommons.robots.{ BaseRobotRules, SimpleRobotRulesParser }
 
@@ -19,21 +19,21 @@ import scala.concurrent.duration._
 import spray.http._
 import HttpMethods._
 import scala.util.{ Try, Success, Failure }
-import scala.Some
+import scala.{ Some, None }
 import spray.http.HttpResponse
 import akka.contrib.throttle.Throttler.SetTarget
 import akka.contrib.throttle.Throttler.Rate
 
 /**
- * Creates a HTTP client scoped by hostName, for performing GET requests
+ * Creates a HTTP client scoped by domain, for performing GET requests
  * {{{
  *   HttpCrawlerClient("https://...")
  * }}}
- * @param hostName The base url, including protocol prefix (http:// or https://)
+ * @param domain The base url, including protocol prefix (http:// or https://)
  * @param portOverride Used to override the port that the underlying spray-client actor uses.
  *                     Intended for testing.
  */
-case class HttpCrawlerClient(hostName: String, portOverride: Option[Int] = None) extends SprayClientHelper {
+case class HttpCrawlerClient(domain: String, portOverride: Option[Int] = None) extends SprayClientHelper {
 
   /**
    * Useful for debugging the response body of an HttpResponse
@@ -57,7 +57,7 @@ case class HttpCrawlerClient(hostName: String, portOverride: Option[Int] = None)
   }
 
   /**
-   * Perform a GET request on a path relative to hostName.
+   * Perform a GET request on a path relative to domain.
    * {{{
    *   val client = HttpCrawlerClient("https://github.com")
    *   client.get("/")
@@ -65,11 +65,11 @@ case class HttpCrawlerClient(hostName: String, portOverride: Option[Int] = None)
    *   HttpCrawlerClient(http://www.yahoo.com).get("/")
    *   => res2: Future[Try[HttpResponse]]
    * }}}
-   * @param path The path relative to hostName to GET.
+   * @param path The path relative to domain to GET.
    * @return A future [[spray.http.HttpResponse]]
    */
   def get(path: String): Future[Try[HttpResponse]] = {
-    pipeline(HttpRequest(GET, path))
+    throttledSendReceive(HttpRequest(GET, path))
   }
 
   /**
@@ -78,7 +78,7 @@ case class HttpCrawlerClient(hostName: String, portOverride: Option[Int] = None)
    *  val client = HttpCrawlerClient("https://github.com")
    *  client.get("/", sendReceive(conduit)) // gets the root page of github.com, with the basic spray.client pipeline
    * }}}
-   * @param path The path relative to hostName to GET.
+   * @param path The path relative to domain to GET.
    * @param pipe A transformation function to be done on the [[spray.http.HttpRequest]]
    * @return A future of type T
    * @tparam T The type of the result of the transformation function

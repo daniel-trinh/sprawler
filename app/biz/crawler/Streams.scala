@@ -1,10 +1,16 @@
 package biz.crawler
 
-import biz.CrawlerExceptions.{ UnknownException, UrlNotAllowedException, FailedHttpRequestException, UnprocessableUrlException }
+import biz.CrawlerExceptions._
 import biz.CrawlerExceptions.JsonImplicits._
 import play.api.libs.iteratee.Concurrent
 import play.api.libs.json._
 import spray.http.HttpResponse
+import biz.CrawlerExceptions.FailedHttpRequestException
+import spray.http.HttpResponse
+import biz.CrawlerExceptions.UnknownException
+import play.api.libs.json.JsObject
+import play.api.libs.json.JsString
+import play.api.libs.json.JsNumber
 
 /**
  * For pushing JSON results and exceptions into a [[play.api.libs.iteratee.Concurrent.Channel]].
@@ -25,7 +31,7 @@ trait Streams {
     streamJson(JsObject(Seq("error" -> jsError)), eofAndEnd)
   }
 
-  def streamJsResponse(fromUrl: String, toUrl: String, response: HttpResponse, eofAndEnd: Boolean = false) {
+  def streamJsonResponse(fromUrl: String, toUrl: String, response: HttpResponse, eofAndEnd: Boolean = false) {
     streamJson(responseToJson(fromUrl, toUrl, response), eofAndEnd)
   }
 
@@ -35,19 +41,23 @@ trait Streams {
    *
    * @param error The throwable to convert into json and stream.
    */
-  def streamJsonErrorFromException(error: Throwable) {
+  def streamJsonErrorFromException(error: Throwable, eofAndEnd: Boolean = false) {
     error match {
       // NOTE: this code is left in this verbose manner, because Json.toJson doesn't work
       // when trying to use this shortened version, due to the type inference getting generalized to
       // "Throwable": http://stackoverflow.com/a/8481924/1093160
       case error @ UnprocessableUrlException(_, _, _, _) =>
-        streamJsonError(Json.toJson(error))
+        streamJsonError(Json.toJson(error), eofAndEnd)
       case error @ FailedHttpRequestException(_, _, _, _) =>
-        streamJsonError(Json.toJson(error))
+        streamJsonError(Json.toJson(error), eofAndEnd)
       case error @ UrlNotAllowedException(_, _, _, _) =>
-        streamJsonError(Json.toJson(error))
+        streamJsonError(Json.toJson(error), eofAndEnd)
+      case error @ RedirectLimitReachedException(_, _, _, _, _) =>
+        streamJsonError(Json.toJson(error), eofAndEnd)
+      case error @ MissingRedirectUrlException(_, _, _) =>
+        streamJsonError(Json.toJson(error), eofAndEnd)
       case error @ UnknownException(_, _) =>
-        streamJsonError(Json.toJson(error))
+        streamJsonError(Json.toJson(error), eofAndEnd)
       case error: Throwable =>
         streamJsonError(Json.toJson(UnknownException(error.getMessage)))
         // Log this error, because something unexpected happened

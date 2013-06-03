@@ -43,9 +43,12 @@ object ApplicationBuild extends Build {
     import scalariform.formatter.preferences._
     FormattingPreferences()
       .setPreference(PreserveDanglingCloseParenthesis, true)
-      .setPreference(AlignParameters, true)
+      .setPreference(AlignParameters, false)
+      .setPreference(CompactStringConcatenation, true)
+      .setPreference(CompactControlReadability, true)
       .setPreference(AlignSingleLineCaseStatements, true)
       .setPreference(AlignSingleLineCaseStatements.MaxArrowIndent, 40)
+      .setPreference(SpacesWithinPatternBinders, true)
       .setPreference(DoubleIndentClassDeclaration, true)
   }
 }

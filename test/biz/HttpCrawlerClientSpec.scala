@@ -15,18 +15,11 @@ import scala.util.{ Try, Failure, Success }
 import spray.can.client.ClientSettings
 import spray.client.ConduitSettings
 import biz.http.client.HttpCrawlerClient
+import biz.crawler.{ AbsoluteHttpUrl, CrawlerActor }
 
-class HttpCrawlerClientSpec extends WordSpec with BeforeAndAfter with ShouldMatchers with PrivateMethodTester {
+class HttpCrawlerClientSpec extends WordSpec with BeforeAndAfter with ShouldMatchers with PrivateMethodTester with SpecHelper {
   // Launch play app for Akka.system
   new StaticApplication(new java.io.File("."))
-
-  // Helper to launch test Play server and create a client for performing HTTP requests to Play server
-  def localHttpTest[T](f: HttpCrawlerClient => T, port: Int = 3333): T = {
-    running(TestServer(port)) {
-      val client = HttpCrawlerClient("localhost", portOverride = Some(port))
-      f(client)
-    }
-  }
 
   "HttpCrawlerClient" when {
     ".get(path)" should {
@@ -122,14 +115,21 @@ class HttpCrawlerClientSpec extends WordSpec with BeforeAndAfter with ShouldMatc
           val request = client.get("/test/redirect")
           val result = Await.result(request, 5.seconds)
           result map { res =>
+            res.status.value should be === 200
             println(res.entity.asString)
           }
+
         }
       }
       "handle 500s" in {
         localHttpTest { client =>
           val request = client.get("/test/internalError")
           val result = Await.result(request, 5.seconds)
+
+          result.isFailure should be === false
+          result foreach { res =>
+            res.status.value should be === 500
+          }
         }
       }
     }
@@ -166,7 +166,6 @@ class HttpCrawlerClientSpec extends WordSpec with BeforeAndAfter with ShouldMatc
             rules.getCrawlDelay should be === CrawlerConfig.defaultCrawlDelay
             rules.isAllowAll should be === true
           }
-
         }
       }
     }

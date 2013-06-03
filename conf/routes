@@ -23,6 +23,7 @@ GET     /assets/*file               controllers.Assets.at(path="/public", file)
 
 # Test routes
 GET     /test/redirect              controllers.TestDummy.redirect
+GET     /test/infiniteRedirect      controllers.TestDummy.infiniteRedirect
 GET     /test/timeout               controllers.TestDummy.timeout
 GET     /test/notFound              controllers.TestDummy.notFound
 GET     /test/internalError         controllers.TestDummy.internalError

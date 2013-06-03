@@ -11,4 +11,7 @@ object CrawlerConfig extends BaseConfig {
    * Crawl delay in milliseconds
    */
   val defaultCrawlDelay = config.getInt("default-crawl-delay")
+
+  val maxRedirects = config.getInt("max-redirects")
+
 }
