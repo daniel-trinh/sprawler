@@ -90,10 +90,14 @@ object CrawlerExceptions {
    * @param errorType
    */
   case class UnprocessableUrlException(
-    fromUrl: String,
-    toUrl: String,
-    message: String,
-    errorType: String = "unprocessable_url") extends CrawlerException(message)
+      fromUrl: String,
+      toUrl: String,
+      message: String,
+      errorType: String = "unprocessable_url") extends CrawlerException(message) {
+    override def toString: String = {
+      s"fromUrl: $fromUrl, toUrl: $toUrl, message: $message"
+    }
+  }
 
   object UnprocessableUrlException {
     val MissingHttpPrefix = "Url must start with https:// or http://"

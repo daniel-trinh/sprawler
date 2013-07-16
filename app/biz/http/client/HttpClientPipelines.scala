@@ -1,6 +1,6 @@
 package biz.http.client
 
-import akka.actor.{ Status, ActorRef }
+import akka.actor.{ ActorSystem, Status, ActorRef }
 import akka.spray.{ UnregisteredActorRef, RefUtils }
 
 import biz.config.SprayCanConfig
@@ -14,21 +14,16 @@ import scala.async.Async._
 import scala.concurrent.{ Promise, Future }
 import scala.util.{ Failure, Success, Try }
 
-import spray.client.HttpConduit._
 import spray.http.{ StatusCodes, HttpRequest, HttpResponse }
+import spray.client.pipelining._
 
 import play.api.libs.concurrent.Execution.Implicits._
-import scala.annotation.tailrec
-import spray.http.HttpHeaders.Location
+import play.libs.Akka
 
 trait HttpClientPipelines extends Throttler {
 
-  /**
-   * [[spray.can.client.HttpClient]] conduit actor. It is left abstract to allow for the user
-   * to specify their own conduit as needed. This is a boilerplate requirement in order to perform HTTP requests
-   * using spray.client.
-   */
-  def conduit: ActorRef
+  private implicit val system = Akka.system
+  val sendReceiver = sendReceive
 
   /**
    * Base url of the website being crawled.
@@ -42,7 +37,7 @@ trait HttpClientPipelines extends Throttler {
   def robotRules: Future[Try[BaseRobotRules]]
 
   /**
-   * [[spray.can.client.HttpClient]] pipeline. Will only return the body of the response. Can throw a
+   * [[spray.can.client]] pipeline. Will only return the body of the response. Can throw a
    * [[biz.CrawlerExceptions.FailedHttpRequestException]] via parseBody.
    */
   lazy val bodyOnlyPipeline = {
@@ -50,14 +45,14 @@ trait HttpClientPipelines extends Throttler {
   }
 
   /**
-   * [[spray.can.client.HttpClient]] pipeline. Intended to only be used for getting "robots.txt" files.
+   * [[spray.can.client]] pipeline. Intended to only be used for getting "robots.txt" files.
    * Does not go through throttledSendReceive, since throttledSendReceive depends on figuring out the
    * crawl delay from robots.txt (would result in a deadlock).
    * Does not use parseBody, since parseBody accepts a Try[HttpResponse] instead of a HttpResponse, and
    * sendReceive
    */
   lazy val fetchRobotRules = {
-    sendReceiveTry(conduit) ~>
+    sendReceiveTry ~>
       parseRobotRules
   }
 
@@ -73,13 +68,13 @@ trait HttpClientPipelines extends Throttler {
         if (r.status.isSuccess) {
           r.entity.asString
         } else
-          throw new FailedHttpRequestException(r.status.value, r.status.reason, r.status.defaultMessage)
+          throw new FailedHttpRequestException(r.status.intValue, r.status.reason, r.status.defaultMessage)
       }
     }
   }
 
   /**
-   * Intended to be a throttled drop in replacement for [[spray.client.HttpConduit]].sendReceive
+   * Intended to be a throttled drop in replacement for [[spray.client]].sendReceive
    * @return A function that receives a [[spray.http.HttpRequest]] and returns a future'd try'd [[spray.http.HttpResponse]].
    */
   def throttledSendReceive: HttpRequest => Future[Try[HttpResponse]] = {
@@ -89,12 +84,12 @@ trait HttpClientPipelines extends Throttler {
           // Send a dummy object to throttler, and wait for an "ok" back from the throttler
           // to perform an action
           val tryRules = await(robotRules)
-          val url = s"${domain}${request.uri}"
+          val url = request.uri.toString()
 
           // Check to make sure doing a request on this URL is allowed (based on the domain's robot rules)
           val asdf = tryRules match {
             case Success(rules) =>
-              checkUrl(rules.isAllowed(url), request)
+              checkAndThrottleRequest(rules.isAllowed(url), request)
             case Failure(throwable) =>
               // TODO: is there a better way of doing this? looks like unnecessary boxing
               Future(Failure(throwable))
@@ -117,44 +112,38 @@ trait HttpClientPipelines extends Throttler {
     }
   }
 
-  def sendReceiveTry(httpConduitRef: ActorRef): HttpRequest => Future[Try[HttpResponse]] = {
+  /**
+   * Same as [[spray.client]].sendReceive, except the HttpResponse is wrapped in a Try.
+   * @return Future'd try'd http response
+   */
+  def sendReceiveTry: HttpRequest => Future[Try[HttpResponse]] = {
     request =>
       {
-        val futureResponse = sendReceive(httpConduitRef)(request)
+        val futureResponse = sendReceiver(request)
         futureResponse.tryMe
       }
   }
 
-  private def customSendReceive(httpConduitRef: ActorRef): HttpRequest => Future[HttpResponse] = {
-    require(RefUtils.isLocal(httpConduitRef), "sendReceive cannot be constructed for remote HttpConduits")
-    request => {
-      val promise = Promise[HttpResponse]()
-      val receiver = new UnregisteredActorRef(httpConduitRef) {
-        def handle(message: Any)(implicit sender: ActorRef) {
-          message match {
-            case x: HttpResponse       => promise.success(x)
-            case Status.Failure(error) => promise.failure(error)
-          }
-        }
-      }
-      httpConduitRef.tell(request, receiver)
-      promise.future
-    }
-  }
-
-  private def checkUrl(b: Boolean, request: HttpRequest): Future[Try[HttpResponse]] = {
+  /**
+   * Checks if a HttpRequest can be crawled, and queues the request to be crawled in a throttler.
+   * @param urlIsAllowed True if the url can be crawled, false otherwise
+   * @param request The [[spray.http.HttpRequest]] to check for crawlability
+   * @return Future'd Try'd [[spray.http.HttpResponse]].
+   *         The Try contains a [[biz.CrawlerExceptions.UrlNotAllowedException]] if the url is
+   *         not crawlable.
+   */
+  private def checkAndThrottleRequest(urlIsAllowed: Boolean, request: HttpRequest): Future[Try[HttpResponse]] = {
     async {
-      if (b) {
+      if (urlIsAllowed) {
         val p = Promise[Boolean]()
         await(throttler) ! PromiseRequest(p)
         await(p.future)
-
-        await(sendReceiveTry(conduit)(request))
+        await(sendReceiveTry(request))
       } else {
         Failure(
           UrlNotAllowedException(
             host = domain,
-            path = request.uri,
+            path = request.uri.path.toString(),
             message = UrlNotAllowedException.RobotRuleDisallowed)
         )
       }

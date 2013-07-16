@@ -15,11 +15,12 @@ import play.libs.Akka
 import scala.concurrent.{ Promise, Future }
 import scala.async.Async.{ async, await }
 import scala.concurrent.duration._
-
-import spray.http._
-import HttpMethods._
 import scala.util.{ Try, Success, Failure }
 import scala.{ Some, None }
+import spray.client.pipelining._
+import spray.http._
+
+import HttpMethods._
 import spray.http.HttpResponse
 import akka.contrib.throttle.Throttler.SetTarget
 import akka.contrib.throttle.Throttler.Rate
@@ -29,11 +30,13 @@ import akka.contrib.throttle.Throttler.Rate
  * {{{
  *   HttpCrawlerClient("https://...")
  * }}}
- * @param domain The base url, including protocol prefix (http:// or https://)
+ * @param uri The base URI that contains the hostname of the domain to crawl.
  * @param portOverride Used to override the port that the underlying spray-client actor uses.
  *                     Intended for testing.
  */
-case class HttpCrawlerClient(domain: String, portOverride: Option[Int] = None) extends SprayClientHelper {
+case class HttpCrawlerClient(uri: Uri, portOverride: Option[Int] = None) extends HttpClientPipelines {
+
+  val domain = uri.scheme + uri.authority.host.address
 
   /**
    * Useful for debugging the response body of an HttpResponse
@@ -69,7 +72,7 @@ case class HttpCrawlerClient(domain: String, portOverride: Option[Int] = None) e
    * @return A future [[spray.http.HttpResponse]]
    */
   def get(path: String): Future[Try[HttpResponse]] = {
-    throttledSendReceive(HttpRequest(GET, path))
+    throttledSendReceive(Get(domain + path))
   }
 
   /**
@@ -84,7 +87,7 @@ case class HttpCrawlerClient(domain: String, portOverride: Option[Int] = None) e
    * @tparam T The type of the result of the transformation function
    */
   def get[T](path: String, pipe: HttpRequest => Future[T]): Future[T] = {
-    pipe(HttpRequest(GET, path))
+    pipe(Get(domain + path))
   }
 
   /**
@@ -125,7 +128,7 @@ case class HttpCrawlerClient(domain: String, portOverride: Option[Int] = None) e
   }
 
   private def fetchRules: Future[Try[BaseRobotRules]] = {
-    val request = HttpRequest(GET, "/robots.txt")
+    val request = Get("/robots.txt")
     fetchRobotRules(request)
   }
 }

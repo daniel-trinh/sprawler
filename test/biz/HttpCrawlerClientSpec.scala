@@ -18,10 +18,13 @@ import biz.http.client.HttpCrawlerClient
 import biz.crawler.{ AbsoluteHttpUrl, CrawlerActor }
 
 class HttpCrawlerClientSpec extends WordSpec with BeforeAndAfter with ShouldMatchers with PrivateMethodTester with SpecHelper {
-  // Launch play app for Akka.system
-  new StaticApplication(new java.io.File("."))
 
   "HttpCrawlerClient" when {
+    before {
+      // Launch play app for Akka.system
+      new StaticApplication(new java.io.File("."))
+
+    }
     ".get(path)" should {
       // TODO: use fake stubbed endpoints instead of real ones
       "fetch a simple https:// url" in {
@@ -113,12 +116,11 @@ class HttpCrawlerClientSpec extends WordSpec with BeforeAndAfter with ShouldMatc
       "handle 300s" in {
         localHttpTest { client =>
           val request = client.get("/test/redirect")
+          println(client)
           val result = Await.result(request, 5.seconds)
           result map { res =>
             res.status.value should be === 200
-            println(res.entity.asString)
           }
-
         }
       }
       "handle 500s" in {

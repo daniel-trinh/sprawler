@@ -12,8 +12,9 @@ import akka.actor.Actor
 import scala.async.Async.{ async, await }
 import scala.util.{ Try, Success, Failure }
 import scala.{ Some, None }
-import spray.http.HttpResponse
+import spray.http.{ HttpHeader, HttpResponse }
 import spray.http.HttpHeaders.Location
+import spray.client.pipelining._
 import scala.concurrent.Future
 import scala.annotation.tailrec
 
@@ -34,31 +35,42 @@ trait RedirectFollower {
       redirectResponse: Future[Try[HttpResponse]],
       redirectsLeft: Int): Future[Try[HttpResponse]] = {
 
+      //TODO: is there a better way of coding this without having a ridiculous amount of nesting?
       async {
         await(redirectResponse) match {
           case Success(response) => {
-            response.header[Location] match {
-              case Some(Location(newUrl)) => {
-                val nextRedirectUrl: CrawlerUrl = if (newUrl.startsWith("https://")) {
-                  AbsoluteHttpsUrl(redirectUrl.url, newUrl)
+            // Find the Location header if one exists
+            val maybeLocationHeader = response.headers.find { header =>
+              header.lowercaseName == "location"
+            }
+            maybeLocationHeader match {
+              case Some(header) => {
+                val newUrl = header.value
+                val nextRedirectUrl: CrawlerUrl = if (newUrl.startsWith("https://") || newUrl.startsWith("https://")) {
+                  AbsoluteUrl(redirectUrl.url, Get(newUrl).uri)
+                } else {
+                  val absoluteUrl = s"${redirectUrl.url.scheme}${redirectUrl.url.authority.host}$newUrl"
+                  AbsoluteUrl(redirectUrl.url, Get(absoluteUrl).uri)
                 }
-                else if (newUrl.startsWith("http://")) {
-                  AbsoluteHttpUrl(redirectUrl.url, newUrl)
+
+                val tryResponse = for {
+                  nextTopPrivateDomain <- nextRedirectUrl.topPrivateDomain
+                  crawlerDomain <- crawlerUrl.domain
+                  nextRelativePath = nextRedirectUrl.url.path.toString()
+                } yield {
+                  val httpClient = CrawlerAgents.getClient(nextRedirectUrl.url)
+                  httpClient.get(nextRelativePath)
                 }
-                else {
-                  RelativeUrl(redirectUrl.url, newUrl, crawlerUrl.domain)
-                }
-                nextRedirectUrl.topPrivateDomain match {
-                  case Success(tpd) =>
-                    val httpClient = CrawlerAgents.getClient(tpd, crawlerUrl.domain)
-                    val nextRedirectResponse = httpClient.get(nextRedirectUrl.relativePath)
+
+                tryResponse match {
+                  case Success(nextRedirectResponse) => {
                     await(followRedirects1(nextRedirectUrl, nextRedirectResponse, redirectsLeft - 1))
-                  case Failure(error) =>
-                    Failure(error)
+                  }
+                  case Failure(x) => Failure(x)
                 }
               }
               case None => {
-                Failure((MissingRedirectUrlException(redirectUrl.fromUrl, "No URL found in redirect")))
+                Failure(MissingRedirectUrlException(redirectUrl.fromUrl.toString(), "No URL found in redirect"))
               }
             }
           }
@@ -72,16 +84,14 @@ trait RedirectFollower {
     async {
       await(res) match {
         case Success(response) =>
-          val code = response.status.value
+          val code = response.status.intValue
           if (code >= 300 && code < 400) {
             if (maxRedirects > 0) {
               await(followRedirects1(resUrl, res, maxRedirects))
+            } else {
+              Failure(RedirectLimitReachedException(resUrl.fromUrl.toString(), resUrl.url.toString()))
             }
-            else {
-              Failure(RedirectLimitReachedException(resUrl.fromUrl, resUrl.url))
-            }
-          }
-          else {
+          } else {
             await(res)
           }
         case Failure(error) => {
@@ -102,26 +112,30 @@ class CrawlerActor(val channel: Concurrent.Channel[JsValue], val crawlerUrl: Cra
       if (info.depth <= CrawlerConfig.maxDepth) {
         info.topPrivateDomain match {
           case Failure(err) =>
-            streamJsonErrorFromException(UnprocessableUrlException(info.fromUrl, info.url, err.getMessage))
+            streamJsonErrorFromException(UnprocessableUrlException(info.fromUrl.toString(), info.url.toString(), err.getMessage))
           case Success(topDomain) =>
-            val client = getClient(topDomain, info.domain)
-            async {
-              val result = await(client.get(info.relativePath))
-              result match {
-                case Failure(err) =>
-                  streamJsonErrorFromException(err, eofAndEnd = false)
-                case Success(response) =>
-                  streamJsonResponse(info.fromUrl, info.url, response)
-                  val code = response.status.value
-                  if (code >= 300 && code < 400) {
-                    followRedirects(info, Future(Success(response)))
-                  }
+            for {
+              domain <- info.domain
+              relativePath = info.url.path.toString()
+            } yield {
+              val client = getClient(topDomain, domain)
+              async {
+                val result = await(client.get(relativePath))
+                result match {
+                  case Failure(err) =>
+                    streamJsonErrorFromException(err, eofAndEnd = false)
+                  case Success(response) =>
+                    streamJsonResponse(info.fromUrl.toString(), info.url.toString(), response)
+                    val code = response.status.intValue
+                    if (code >= 300 && code < 400) {
+                      followRedirects(info, Future(Success(response)))
+                    }
+                }
+                cleanup()
               }
-              cleanup()
             }
         }
-      }
-      else {
+      } else {
         channel.push(JsObject(
           Seq("complete" -> JsString(s"Maximum crawl depth has been reached. Depth: ${CrawlerConfig.maxDepth}"))
         ))

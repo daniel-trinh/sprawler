@@ -8,24 +8,32 @@ import scala.collection.mutable
 import play.api.libs.json.{ JsString, JsValue }
 import play.api.libs.iteratee.Concurrent.Channel
 import play.api.libs.iteratee.Input
-import biz.crawler.Streams
+import biz.crawler.{ CrawlerAgents, Streams }
+import play.core.StaticApplication
 
 trait SpecHelper {
   // Helper to launch test Play server and create a client for performing HTTP requests to Play server
-  def localHttpTest[T](f: HttpCrawlerClient => T, port: Int = 3333): T = {
+  def localHttpTest[T](f: HttpCrawlerClient => T, port: Int = SpecHelper.port): T = {
     running(TestServer(port)) {
-      val client = HttpCrawlerClient("localhost", portOverride = Some(port))
+      val client = CrawlerAgents.getClient(
+        topPrivateDomain = "localhost",
+        domain = "localhost",
+        portOverride = Some(port)
+      )
       f(client)
     }
   }
 }
 
 object SpecHelper {
+
+  val port = 3333
+
   /**
    * Should match up with url of Play running in test mode, but syncing is not guaranteed.
    * This val is just for convenience.
    */
-  val testDomain = "http://0.0.0.0:9000"
+  val testDomain = s"localhost"
 
   /**
    * Used for testing, implements the methods for Channel.

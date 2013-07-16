@@ -19,6 +19,7 @@ object ApplicationBuild extends Build {
     scalaTools,
     typesafe,
     spray,
+    sprayNightly,
     sonatype
   )
 
@@ -45,7 +46,7 @@ object ApplicationBuild extends Build {
       .setPreference(PreserveDanglingCloseParenthesis, true)
       .setPreference(AlignParameters, false)
       .setPreference(CompactStringConcatenation, true)
-      .setPreference(CompactControlReadability, true)
+      .setPreference(CompactControlReadability, false)
       .setPreference(AlignSingleLineCaseStatements, true)
       .setPreference(AlignSingleLineCaseStatements.MaxArrowIndent, 40)
       .setPreference(SpacesWithinPatternBinders, true)
@@ -62,6 +63,8 @@ object Resolvers {
     "http://repo.typesafe.com/typesafe/releases/"
   val spray      = "spray repo" at
     "http://repo.spray.io"
+  val sprayNightly = "spray nightly" at
+    "http://nightlies.spray.io"
   val sonatype   = "Sonatype OSS" at
     "https://oss.sonatype.org"
 }
@@ -69,8 +72,9 @@ object Resolvers {
 object Dependencies {
 
   object V {
-    val Spray = "1.1-M7"
-    val Akka  = "2.1.2"
+    val Spray = "1.1-M8"
+    val SprayNightly = "1.1-20130614"
+    val Akka  = "2.1.4"
   }
 
   // Misc
@@ -98,11 +102,11 @@ object Dependencies {
 
   // Spray
   val sprayDeps = Seq(
-    "io.spray" %  "spray-client" % V.Spray,
-    "io.spray" %  "spray-can"    % V.Spray,
-    "io.spray" %  "spray-http"   % V.Spray,
-    "io.spray" %  "spray-httpx"  % V.Spray,
-    "io.spray" %  "spray-util"   % V.Spray
+    "io.spray" %  "spray-client" % V.SprayNightly,
+    "io.spray" %  "spray-can"    % V.SprayNightly,
+    "io.spray" %  "spray-http"   % V.SprayNightly,
+    "io.spray" %  "spray-httpx"  % V.SprayNightly,
+    "io.spray" %  "spray-util"   % V.SprayNightly
   )
   val Seq(
     sprayClient,

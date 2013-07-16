@@ -31,7 +31,7 @@ object Application extends Controller {
   }
 
   def echo = Action { request =>
-    Ok("Got request [" + request + "]")
+    Ok("Got request ["+request+"]")
   }
 
 }

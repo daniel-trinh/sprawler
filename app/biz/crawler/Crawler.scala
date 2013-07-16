@@ -23,10 +23,11 @@ import scala.concurrent.{ Promise, Future }
 import scala.collection.mutable
 import scala.async.Async.{ async, await }
 import scala.util.{ Try, Success, Failure }
+import spray.client.pipelining._
 
 import java.net.URI
 
-import spray.http.HttpResponse
+import spray.http.{ Uri, HttpResponse }
 
 // url not crawlable due to robots
 // timeout
@@ -40,16 +41,14 @@ import spray.http.HttpResponse
  */
 class Crawler(url: String) extends Streams {
 
-  val domain = (new URI(url)).getHost
+  val request = spray.client.pipelining.Get(url)
+
+  val domain = request.uri.authority.host
 
   val tryCrawlerUrl: Try[CrawlerUrl] = {
-    if (url.startsWith("https://")) {
-      Success(AbsoluteHttpsUrl("", url))
-    }
-    else if (url.startsWith("http://")) {
-      Success(AbsoluteHttpUrl("", url))
-    }
-    else {
+    if (url.startsWith("https://") || url.startsWith("http://")) {
+      Success(AbsoluteUrl(url, url))
+    } else {
       Failure(UnprocessableUrlException(url, url, UnprocessableUrlException.MissingHttpPrefix))
     }
   }
@@ -106,16 +105,18 @@ object CrawlerAgents {
    */
   val crawlerClients = Agent(new mutable.HashMap[String, HttpCrawlerClient])(Akka.system)
 
-  def getClient(topPrivateDomain: String, domain: String): HttpCrawlerClient = {
-    crawlerClients().get(topPrivateDomain) match {
+  def getClient(uri: Uri, portOverride: Option[Int] = None): HttpCrawlerClient = {
+    val urlKey = s"${uri.scheme}${uri.authority.host}"
+
+    crawlerClients().get(urlKey) match {
       case Some(client) =>
         client
       case None =>
-        val httpClient = HttpCrawlerClient(domain)
+        val httpClient = HttpCrawlerClient(uri, portOverride)
 
         crawlerClients send { s =>
           // avoid updating the hashtable if another client has already been added asynchronously
-          s.getOrElseUpdate(topPrivateDomain, httpClient)
+          s.getOrElseUpdate(urlKey, httpClient)
           s
         }
         httpClient
@@ -139,19 +140,25 @@ case class Links(links: List[String])
  *  the crawler started crawling from. TPDs are used similar to how SHA's are
  *  used to identify code states in git. Used to check if toUrl is on the same domain as the origin URL.
  */
-
 sealed abstract class CrawlerUrl extends CheckUrlCrawlability {
 
-  def fromUrl: String
-  def url: String
+  def fromUrl: Uri
+  def url: Uri
 
-  def domain: String
-  def relativePath: String
+  def domain: Try[String]
 
   def topPrivateDomain: Try[String] = {
-    Try(InternetDomainName.fromLenient(domain).topPrivateDomain().name()) match {
-      case Failure(error)   => Failure(UnprocessableUrlException(fromUrl, url, error.getMessage))
-      case tpd @ Success(_) => tpd
+    domain map { d =>
+      // Special case localhost and 0.0.0.0, because they are valid urls
+      // for local servers. Useful for testing
+      if (d == "localhost" || d == "0.0.0.0") {
+        d
+      } else {
+        Try(InternetDomainName.fromLenient(d).topPrivateDomain().name()) match {
+          case Failure(error) => throw UnprocessableUrlException(fromUrl.toString(), url.toString(), error.getMessage)
+          case Success(tpd)   => tpd
+        }
+      }
     }
   }
 
@@ -163,55 +170,44 @@ sealed abstract class CrawlerUrl extends CheckUrlCrawlability {
   def depth: Int = CrawlerConfig.maxDepth
 
   def nextUrl(nextUrl: String): CrawlerUrl = {
-    if (url.startsWith("https://")) {
-      AbsoluteHttpsUrl(url, nextUrl)
-    }
-    else if (url.startsWith("http://")) {
-      AbsoluteHttpUrl(url, nextUrl)
-    }
-    else {
-      throw UnprocessableUrlException(url, nextUrl, UnprocessableUrlException.MissingHttpPrefix)
+    if (url.scheme == "https://" || url.scheme == "http://") {
+      AbsoluteUrl(url, nextUrl)
+    } else {
+      throw UnprocessableUrlException(url.toString(), nextUrl, UnprocessableUrlException.MissingHttpPrefix)
     }
   }
-
-  def nextUrl(relativeNextUrl: String, domain: String): CrawlerUrl = {
-    RelativeUrl(url, relativeNextUrl, domain)
-  }
-
-}
-
-sealed trait RelativeCrawlerUrl extends CrawlerUrl {
-  val relativePath = url
 }
 
 sealed trait AbsoluteCrawlerUrl extends CrawlerUrl {
   def prefixLength: Int
-  val domain: String = new URI(url).getHost
-  val relativePath = {
-    val pathAttempt = url.substring(domain.length + prefixLength, url.length)
-    if (pathAttempt == "")
-      "/"
-    else
-      pathAttempt
+
+  val domain: Try[String] = {
+    val prependedUrl = if (url.scheme != "https://" && url.scheme != "http://") {
+      s"http://$url"
+    } else {
+      url.toString()
+    }
+
+    val prependedUri = spray.client.pipelining.Get(prependedUrl).uri
+    val host = prependedUri.authority.host.address
+
+    if (host != "") {
+      Success(host)
+    } else {
+      Failure(UnprocessableUrlException(fromUrl.toString(), url.toString(), "Unable to determine domain name from URL"))
+    }
   }
 }
 
-case object EmptyUrl extends CrawlerUrl {
-  def url: Nothing = throw new RuntimeException("Invalid method access on EmptyUrl.")
-  def fromUrl: Nothing = throw new RuntimeException("Invalid method access on EmptyUrl.")
-  def domain: Nothing = throw new RuntimeException("Invalid method access on EmptyUrl.")
-  def relativePath: Nothing = throw new RuntimeException("Invalid method access on EmptyUrl.")
+case class AbsoluteUrl(fromUrl: Uri, url: Uri) extends AbsoluteCrawlerUrl {
+  val prefixLength = if (url.toString().startsWith("http://")) {
+    7
+  } else if (url.toString().startsWith("https://")) {
+    8
+  }
 }
-
-case class AbsoluteHttpsUrl(fromUrl: String, url: String) extends AbsoluteCrawlerUrl {
-  val prefixLength = 8
-}
-
-case class AbsoluteHttpUrl(fromUrl: String, url: String) extends AbsoluteCrawlerUrl {
-  val prefixLength = 7
-}
-
-case class RelativeUrl(fromUrl: String, url: String, domain: String) extends RelativeCrawlerUrl
+//
+//case class CrawlerUrl(fromUrl: String, url: Uri)
 
 trait CheckUrlCrawlability { this: CrawlerUrl =>
 
@@ -243,7 +239,7 @@ trait CheckUrlCrawlability { this: CrawlerUrl =>
   }
 
   // May report false negatives because of Agent behavior
-  val isVisited: Boolean = CrawlerAgents.visitedUrls().contains(url)
+  val isVisited: Boolean = CrawlerAgents.visitedUrls().contains(url.toString())
 
   def isCrawlable(crawlerUrl: CrawlerUrl): Boolean = !isVisited && sameTPD(crawlerUrl)
 }

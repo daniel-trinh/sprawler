@@ -78,7 +78,7 @@ trait Streams {
     val status = response.status
     val json = JsObject(
       Seq(
-        "status" -> JsNumber(status.value),
+        "status" -> JsNumber(status.intValue),
         "reason" -> JsString(status.reason),
         "to_url" -> JsString(toUrl),
         "from_url" -> JsString(fromUrl)
