@@ -26,14 +26,14 @@ object CrawlerExceptions {
     )(UrlNotAllowedException.apply, unlift(UrlNotAllowedException.unapply))
 
     implicit val unprocessableUrl = (
-      (__ \ "fromUrl").format[String] and
+      (__ \ "fromUri").format[String] and
       (__ \ "toUrl").format[String] and
       (__ \ "message").format[String] and
       (__ \ "errorType").format[String]
     )(UnprocessableUrlException.apply, unlift(UnprocessableUrlException.unapply))
 
     implicit val redirectLimitReached = (
-      (__ \ "fromUrl").format[String] and
+      (__ \ "fromUri").format[String] and
       (__ \ "toUrl").format[String] and
       (__ \ "message").format[String] and
       (__ \ "maxRedirects").format[Int] and
@@ -41,7 +41,7 @@ object CrawlerExceptions {
     )(RedirectLimitReachedException.apply, unlift(RedirectLimitReachedException.unapply))
 
     implicit val missingRedirectUrl = (
-      (__ \ "fromUrl").format[String] and
+      (__ \ "fromUri").format[String] and
       (__ \ "message").format[String] and
       (__ \ "errorType").format[String]
     )(MissingRedirectUrlException.apply, unlift(MissingRedirectUrlException.unapply))
@@ -95,7 +95,7 @@ object CrawlerExceptions {
       message: String,
       errorType: String = "unprocessable_url") extends CrawlerException(message) {
     override def toString: String = {
-      s"fromUrl: $fromUrl, toUrl: $toUrl, message: $message"
+      s"fromUri: $fromUrl, toUrl: $toUrl, message: $message"
     }
   }
 

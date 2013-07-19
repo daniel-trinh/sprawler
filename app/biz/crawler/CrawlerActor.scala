@@ -47,18 +47,17 @@ trait RedirectFollower {
               case Some(header) => {
                 val newUrl = header.value
                 val nextRedirectUrl: CrawlerUrl = if (newUrl.startsWith("https://") || newUrl.startsWith("https://")) {
-                  AbsoluteUrl(redirectUrl.url, Get(newUrl).uri)
+                  AbsoluteUrl(redirectUrl.uri, Get(newUrl).uri)
                 } else {
-                  val absoluteUrl = s"${redirectUrl.url.scheme}${redirectUrl.url.authority.host}$newUrl"
-                  AbsoluteUrl(redirectUrl.url, Get(absoluteUrl).uri)
+                  val absoluteUrl = s"${redirectUrl.uri.scheme}${redirectUrl.uri.authority.host}$newUrl"
+                  AbsoluteUrl(redirectUrl.uri, Get(absoluteUrl).uri)
                 }
 
                 val tryResponse = for {
-                  nextTopPrivateDomain <- nextRedirectUrl.topPrivateDomain
                   crawlerDomain <- crawlerUrl.domain
-                  nextRelativePath = nextRedirectUrl.url.path.toString()
+                  nextRelativePath = nextRedirectUrl.uri.path.toString()
                 } yield {
-                  val httpClient = CrawlerAgents.getClient(nextRedirectUrl.url)
+                  val httpClient = CrawlerAgents.getClient(nextRedirectUrl.uri)
                   httpClient.get(nextRelativePath)
                 }
 
@@ -70,7 +69,7 @@ trait RedirectFollower {
                 }
               }
               case None => {
-                Failure(MissingRedirectUrlException(redirectUrl.fromUrl.toString(), "No URL found in redirect"))
+                Failure(MissingRedirectUrlException(redirectUrl.fromUri.toString(), "No URL found in redirect"))
               }
             }
           }
@@ -89,7 +88,7 @@ trait RedirectFollower {
             if (maxRedirects > 0) {
               await(followRedirects1(resUrl, res, maxRedirects))
             } else {
-              Failure(RedirectLimitReachedException(resUrl.fromUrl.toString(), resUrl.url.toString()))
+              Failure(RedirectLimitReachedException(resUrl.fromUri.toString(), resUrl.uri.toString()))
             }
           } else {
             await(res)
@@ -110,30 +109,21 @@ class CrawlerActor(val channel: Concurrent.Channel[JsValue], val crawlerUrl: Cra
     case info: CrawlerUrl => {
       play.Logger.info(s"Message received: $info")
       if (info.depth <= CrawlerConfig.maxDepth) {
-        info.topPrivateDomain match {
-          case Failure(err) =>
-            streamJsonErrorFromException(UnprocessableUrlException(info.fromUrl.toString(), info.url.toString(), err.getMessage))
-          case Success(topDomain) =>
-            for {
-              domain <- info.domain
-              relativePath = info.url.path.toString()
-            } yield {
-              val client = getClient(topDomain, domain)
-              async {
-                val result = await(client.get(relativePath))
-                result match {
-                  case Failure(err) =>
-                    streamJsonErrorFromException(err, eofAndEnd = false)
-                  case Success(response) =>
-                    streamJsonResponse(info.fromUrl.toString(), info.url.toString(), response)
-                    val code = response.status.intValue
-                    if (code >= 300 && code < 400) {
-                      followRedirects(info, Future(Success(response)))
-                    }
-                }
-                cleanup()
+        val relativePath = info.uri.path.toString()
+        val client = getClient(info.uri)
+        async {
+          val result = await(client.get(relativePath))
+          result match {
+            case Failure(err) =>
+              streamJsonErrorFromException(err, eofAndEnd = false)
+            case Success(response) =>
+              streamJsonResponse(info.fromUri.toString(), info.uri.toString(), response)
+              val code = response.status.intValue
+              if (code >= 300 && code < 400) {
+                followRedirects(info, Future(Success(response)))
               }
-            }
+          }
+          cleanup()
         }
       } else {
         channel.push(JsObject(
