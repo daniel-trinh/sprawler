@@ -40,7 +40,7 @@ trait HttpClientPipelines extends Throttler {
    * [[spray.can.client]] pipeline. Will only return the body of the response. Can throw a
    * [[biz.CrawlerExceptions.FailedHttpRequestException]] via parseBody.
    */
-  lazy val bodyOnlyPipeline = {
+  val bodyOnlyPipeline = {
     throttledSendReceive ~> parseBody
   }
 
@@ -51,7 +51,7 @@ trait HttpClientPipelines extends Throttler {
    * Does not use parseBody, since parseBody accepts a Try[HttpResponse] instead of a HttpResponse, and
    * sendReceive
    */
-  lazy val fetchRobotRules = {
+  val fetchRobotRules = {
     sendReceiveTry ~>
       parseRobotRules
   }
@@ -119,7 +119,9 @@ trait HttpClientPipelines extends Throttler {
   def sendReceiveTry: HttpRequest => Future[Try[HttpResponse]] = {
     request =>
       {
+        println(s"before:${request.uri}")
         val futureResponse = sendReceiver(request)
+        println(s"after:${request.uri}")
         futureResponse.tryMe
       }
   }

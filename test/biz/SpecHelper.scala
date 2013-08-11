@@ -10,15 +10,19 @@ import play.api.libs.iteratee.Concurrent.Channel
 import play.api.libs.iteratee.Input
 import biz.crawler.{ CrawlerAgents, Streams }
 import play.core.StaticApplication
+import spray.http.Uri
 
 trait SpecHelper {
   // Helper to launch test Play server and create a client for performing HTTP requests to Play server
   def localHttpTest[T](f: HttpCrawlerClient => T, port: Int = SpecHelper.port): T = {
     running(TestServer(port)) {
+      val uri = Uri(s"http://localhost:$port")
+      println(s"uri:$uri")
+      println(s"scheme:${uri.scheme}")
+      println(s"port:${uri.authority.port}")
+
       val client = CrawlerAgents.getClient(
-        topPrivateDomain = "localhost",
-        domain = "localhost",
-        portOverride = Some(port)
+        uri = uri
       )
       f(client)
     }

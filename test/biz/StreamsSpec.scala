@@ -33,7 +33,7 @@ class StreamsSpec extends WordSpec with ShouldMatchers with BeforeAndAfter {
             Seq(
               "from_url" -> JsString("url1"),
               "to_url" -> JsString("url2"),
-              "status" -> JsNumber(response.status.value),
+              "status" -> JsNumber(response.status.intValue),
               "reason" -> JsString(response.status.reason)
             )
           )

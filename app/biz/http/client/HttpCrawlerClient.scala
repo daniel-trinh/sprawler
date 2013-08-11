@@ -31,12 +31,10 @@ import akka.contrib.throttle.Throttler.Rate
  *   HttpCrawlerClient("https://...")
  * }}}
  * @param uri The base URI that contains the hostname of the domain to crawl.
- * @param portOverride Used to override the port that the underlying spray-client actor uses.
- *                     Intended for testing.
  */
-case class HttpCrawlerClient(uri: Uri, portOverride: Option[Int] = None) extends HttpClientPipelines {
+case class HttpCrawlerClient(uri: Uri) extends HttpClientPipelines {
 
-  val domain = uri.scheme + uri.authority.host.address
+  val domain = s"${uri.scheme}://${uri.authority.host.address}"
 
   /**
    * Useful for debugging the response body of an HttpResponse
@@ -91,27 +89,27 @@ case class HttpCrawlerClient(uri: Uri, portOverride: Option[Int] = None) extends
   }
 
   /**
+   * Retrieves the [[crawlercommons.robots.BaseRobotRules]] from this [[biz.http.client.HttpCrawlerClient]]'s domain.
+   */
+  val robotRules: Future[Try[BaseRobotRules]] = {
+    fetchRules
+  }
+
+  /**
    * Future'd delay rate, throttled to 1 message per crawl-delay seconds, where crawl-delay
    * is the crawl-delay parsed from the domain's robots.txt file, or
    */
-  lazy val crawlDelayRate: Future[Rate] = {
+  val crawlDelayRate: Future[Rate] = {
     async {
       await(robotRules) match {
         case Success(rules) =>
           val delay = rules.getCrawlDelay
-          1 msgsPer (delay.milliseconds)
+          1 msgsPer delay.milliseconds
         case Failure(exception) =>
           // TODO: should this just throw the exception instead? at the very least, needs to log
-          1 msgsPer (CrawlerConfig.defaultCrawlDelay.milliseconds)
+          1 msgsPer CrawlerConfig.defaultCrawlDelay.milliseconds
       }
     }
-  }
-
-  /**
-   * Retrieves the [[crawlercommons.robots.BaseRobotRules]] from this [[biz.http.client.HttpCrawlerClient]]'s domain.
-   */
-  lazy val robotRules: Future[Try[BaseRobotRules]] = {
-    fetchRules
   }
 
   /**
@@ -128,7 +126,10 @@ case class HttpCrawlerClient(uri: Uri, portOverride: Option[Int] = None) extends
   }
 
   private def fetchRules: Future[Try[BaseRobotRules]] = {
-    val request = Get("/robots.txt")
+    val request = Get(domain+"/robots.txt")
+    //    println("domain:"+domain)
+    //    println("uri:"+uri)
+    //    println(s"request:$request")
     fetchRobotRules(request)
   }
 }
@@ -160,7 +161,7 @@ object RobotRules {
 }
 
 /**
- * Workaround for throttling [[spray.can.client.HttpClient]] requests
+ * Workaround for throttling [[spray.client]] requests
  */
 trait Throttler {
 
@@ -173,7 +174,7 @@ trait Throttler {
   /**
    * Dummy actor that does nothing but complete a supplied promise when a message is received
    */
-  val forwarder = Akka.system.actorOf(Props(new Actor {
+  lazy val forwarder = Akka.system.actorOf(Props(new Actor {
     /**
      * Receives a [[biz.http.client.PromiseRequest]], and complete's the promise with 'true'
      */
@@ -188,13 +189,12 @@ trait Throttler {
    * [[akka.contrib.throttle.TimerBasedThrottler]] that throttles messages sent to forwarder.
    * Delay rate is determined by [[biz.http.client.Throttler]].crawlDelayRate
    */
-  val throttler: Future[ActorRef] = async {
+  lazy val throttler: Future[ActorRef] = async {
     val delayRate = await(crawlDelayRate)
     val throttler = Akka.system.actorOf(Props(new TimerBasedThrottler(delayRate)))
     throttler ! SetTarget(Some(forwarder))
     throttler
   }
-
 }
 
 /**

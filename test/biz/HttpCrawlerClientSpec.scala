@@ -8,14 +8,17 @@ import play.api.test.Helpers._
 import play.api.test.TestServer
 import play.core.StaticApplication
 import play.api.libs.concurrent.Execution.Implicits._
+import play.api.libs.concurrent.Akka
+import play.api.Play.current
 import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
-import scala.Some
 import scala.util.{ Try, Failure, Success }
-import spray.can.client.ClientSettings
-import spray.client.ConduitSettings
+import spray.can.client.HostConnectorSettings
+import spray.can.client.ClientConnectionSettings
 import biz.http.client.HttpCrawlerClient
-import biz.crawler.{ AbsoluteHttpUrl, CrawlerActor }
+import biz.crawler.CrawlerActor
+import spray.http.Uri
+import play.api.libs.ws.WS
 
 class HttpCrawlerClientSpec extends WordSpec with BeforeAndAfter with ShouldMatchers with PrivateMethodTester with SpecHelper {
 
@@ -28,7 +31,7 @@ class HttpCrawlerClientSpec extends WordSpec with BeforeAndAfter with ShouldMatc
     ".get(path)" should {
       // TODO: use fake stubbed endpoints instead of real ones
       "fetch a simple https:// url" in {
-        val request = HttpCrawlerClient("https://www.google.com").get("/robots.txt")
+        val request = HttpCrawlerClient(Uri("https://www.google.com")).get("/")
         val res = Await.result(request, 5.seconds)
 
         res.isSuccess should be === true
@@ -60,9 +63,14 @@ class HttpCrawlerClientSpec extends WordSpec with BeforeAndAfter with ShouldMatc
         localHttpTest { client =>
           val request = client.get("/test/timeout")
 
-          // Add extra slight delay to allow timeout failure to be returned
-          val timeout = ClientSettings().RequestTimeout.longValue()
-          val retries = ConduitSettings().MaxRetries.longValue()
+          val wtf = WS.url("http://localhost:3333/test/timeout").get()
+
+          //          val res = Await.result(wtf, 10.seconds)
+          //          res.status should be === 200
+
+          //          Add extra slight delay to allow timeout failure to be returned
+          val timeout = ClientConnectionSettings(Akka.system).requestTimeout.length.longValue()
+          val retries = HostConnectorSettings(Akka.system).maxRetries.longValue()
 
           val result = Await.result(request, (timeout * (retries + 2)).milliseconds)
           result.isFailure should be === true

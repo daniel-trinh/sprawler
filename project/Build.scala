@@ -11,8 +11,9 @@ object ApplicationBuild extends Build {
   val appName         = "webcrawler"
   val appVersion      = "0.1.0"
 
+  val scalacVersion = "2.10.2"
   val appDependencies = sprayDeps ++ akkaDeps ++ miscDeps ++ testDeps ++ crawlerDeps ++ Seq(
-    "org.scala-lang" % "scala-compiler" % "2.10.1"
+    "org.scala-lang" % "scala-compiler" % scalacVersion
   )
   val appResolvers = Seq(
     jboss,
@@ -35,10 +36,12 @@ object ApplicationBuild extends Build {
   ).settings(
     SbtScalariform.scalariformSettings ++
       (resolvers ++= appResolvers) ++
-      (scalaVersion := "2.10.1") ++
+      (scalaVersion := scalacVersion) ++
       (scalacOptions ++= scalacSettings) ++
-      (ScalariformKeys.preferences := formattingPreferences): _*
+      (ScalariformKeys.preferences := formattingPreferences) ++
+      (initialCommands := PreRun.everything): _*
   ) aggregate(async) dependsOn(async)
+
 
   val formattingPreferences = {
     import scalariform.formatter.preferences._
@@ -123,4 +126,66 @@ object Dependencies {
     "org.scalamock"     %% "scalamock-scalatest-support" % "3.0.1" % "test"
   )
   val Seq(akkaTestkit, scalaTest, scalaMock) = testDeps
+}
+
+/**
+ * Commands to run before a REPL session is loaded.
+ */
+object PreRun {
+
+  val everything = Imports.imports + Commands.commands
+
+  object Imports {
+    val akka =
+      """
+        |import akka.actor._
+        |import akka.contrib.throttle._
+        |import akka.contrib.throttle.Throttler._
+        |import akka.contrib.throttle.Throttler.SetTarget
+        |import akka.contrib.throttle.Throttler.Rate
+      """.stripMargin
+
+    val webcrawler =
+      """
+        |import biz.CrawlerExceptions._
+        |import biz.XmlParser
+        |import biz.http.client.HttpCrawlerClient
+        |import biz.config.CrawlerConfig
+        |import crawlercommons.robots.{ BaseRobotRules, SimpleRobotRulesParser }
+      """.stripMargin
+    val play =
+      """
+        |import play.api.libs.concurrent.Execution.Implicits._
+        |import play.libs.Akka
+        |import play.core.StaticApplication
+      """.stripMargin
+
+    val scala =
+      """
+        |import scala.concurrent.{ Promise, Future }
+        |import scala.async.Async.{ async, await }
+        |import scala.concurrent.duration._
+        |import scala.util.{ Try, Success, Failure }
+        |import scala.{ Some, None }
+      """.stripMargin
+
+    val spray =
+      """
+        |import spray.client.pipelining._
+        |import spray.http._
+        |import spray.http.HttpResponse
+        |import HttpMethods._
+      """.stripMargin
+
+    val imports = akka + webcrawler + play + scala + spray
+  }
+
+  object Commands {
+    val playTestServer =  """ new StaticApplication(new java.io.File(".")) """
+    val commands = playTestServer
+  }
+
+  val includes =
+    """
+    """.stripMargin
 }

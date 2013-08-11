@@ -20,7 +20,7 @@ class RedirectFollowerSpec extends WordSpec with ShouldMatchers with BeforeAndAf
     ".followRedirects" when {
       "infinite redirects" in {
         val redirectRoute = s"${SpecHelper.testDomain}${routes.TestDummy.infiniteRedirect()}"
-        val redirectUrl = AbsoluteHttpUrl(redirectRoute, redirectRoute)
+        val redirectUrl = AbsoluteUrl(redirectRoute, redirectRoute)
         val redirector = DummyRedirector(redirectUrl)
 
         localHttpTest { client =>
@@ -28,7 +28,7 @@ class RedirectFollowerSpec extends WordSpec with ShouldMatchers with BeforeAndAf
           val result = Await.result(redirector.followRedirects(redirectUrl, request), 5.seconds)
           result.isFailure should be === true
 
-          result should be === Failure(RedirectLimitReachedException(redirectUrl.fromUrl, redirectUrl.url))
+          result should be === Failure(RedirectLimitReachedException(redirectUrl.fromUri.toString(), redirectUrl.uri.toString()))
 
         }
       }

@@ -19,12 +19,15 @@ object XmlParser {
    * @return A list of links found in the string of html.
    */
   def extractLinks(response: String): List[String] = {
+    if (response != null) {
+      val xml = Jsoup.parse(response)
+      val links = xml.select("a[href]")
 
-    val xml = Jsoup.parse(response)
-    val links = xml.select("a[href]")
-
-    links.view.map { link =>
-      link.attr("href")
-    }.toList
+      links.view.map { link =>
+        link.attr("href")
+      }.toList
+    } else {
+      Nil
+    }
   }
 }

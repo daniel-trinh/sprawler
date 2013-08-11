@@ -119,7 +119,8 @@ object CrawlerAgents {
       case Some(client) =>
         client
       case None =>
-        val httpClient = HttpCrawlerClient(uri, portOverride)
+        val httpClient = HttpCrawlerClient(uri)
+        println(s"httpClientUri:$uri")
         crawlerClients send { s =>
           // avoid updating the hashtable if another client has already been added asynchronously
           s.getOrElseUpdate(urlKey, httpClient)
@@ -138,21 +139,20 @@ object CrawlerAgents {
 case class Links(links: List[String])
 
 /**
- * TODO: fix docs
  * Data class that contains information about a URL and whether or not it should be crawled.
- *
- * @param fromUri Origin url -- the URI of the URL of the page that uri was found on.
- * @param uri The URI of the URL to crawl / that was crawled.
- *  the crawler started crawling from. TPDs are used similar to how SHA's are
- *  used to identify code states in git. Used to check if toUrl is on the same domain as the origin URL.
  */
 sealed abstract class CrawlerUrl extends CheckUrlCrawlability {
 
   /**
-   *
+   * Used to tell what the previous URI that was crawled was.
    * @return Uri that uri originated from.
    */
   def fromUri: Uri
+
+  /**
+   * Used to tell what the next URI to crawl is, or was just crawled.
+   * @return Current Uri, to crawl, or was just crawled.
+   */
   def uri: Uri
 
   /**
@@ -169,6 +169,11 @@ sealed abstract class CrawlerUrl extends CheckUrlCrawlability {
    */
   def depth: Int = CrawlerConfig.maxDepth
 
+  /**
+   * TODO: remove this? where is it used?
+   * @param nextUrl
+   * @return
+   */
   def nextUrl(nextUrl: String): CrawlerUrl = {
     if (uri.scheme == "https://" || uri.scheme == "http://") {
       AbsoluteUrl(uri, nextUrl)
@@ -185,12 +190,11 @@ sealed trait AbsoluteCrawlerUrl extends CrawlerUrl {
     val prependedUrl = if (uri.scheme != "https://" && uri.scheme != "http://") {
       s"http://${uri.authority.toString()}"
     } else {
-      uri.toString()
+      s"${uri.scheme}${uri.toString()}"
     }
 
     val prependedUri = spray.client.pipelining.Get(prependedUrl).uri
     val host = prependedUri.authority.host.address
-
     if (host != "") {
       Success(host)
     } else {
