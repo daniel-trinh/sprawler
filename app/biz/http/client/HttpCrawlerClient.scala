@@ -34,7 +34,13 @@ import akka.contrib.throttle.Throttler.Rate
  */
 case class HttpCrawlerClient(uri: Uri) extends HttpClientPipelines {
 
-  val domain = s"${uri.scheme}://${uri.authority.host.address}"
+  val baseDomain = s"${uri.scheme}://${uri.authority.host.address}"
+  val port = uri.authority.port
+  val domain = if (uri.authority.port != 0) {
+    s"$baseDomain:$port"
+  } else {
+    baseDomain
+  }
 
   /**
    * Useful for debugging the response body of an HttpResponse
@@ -104,6 +110,7 @@ case class HttpCrawlerClient(uri: Uri) extends HttpClientPipelines {
       await(robotRules) match {
         case Success(rules) =>
           val delay = rules.getCrawlDelay
+          println(s"delay!!!!:$delay")
           1 msgsPer delay.milliseconds
         case Failure(exception) =>
           // TODO: should this just throw the exception instead? at the very least, needs to log
@@ -127,9 +134,7 @@ case class HttpCrawlerClient(uri: Uri) extends HttpClientPipelines {
 
   private def fetchRules: Future[Try[BaseRobotRules]] = {
     val request = Get(domain+"/robots.txt")
-    //    println("domain:"+domain)
-    //    println("uri:"+uri)
-    //    println(s"request:$request")
+
     fetchRobotRules(request)
   }
 }
@@ -180,6 +185,7 @@ trait Throttler {
      */
     def receive = {
       case PromiseRequest(promise) => {
+        println("do i get here? !")
         promise success true
       }
     }
@@ -190,10 +196,14 @@ trait Throttler {
    * Delay rate is determined by [[biz.http.client.Throttler]].crawlDelayRate
    */
   lazy val throttler: Future[ActorRef] = async {
+    println("do i get here? a")
     val delayRate = await(crawlDelayRate)
-    val throttler = Akka.system.actorOf(Props(new TimerBasedThrottler(delayRate)))
-    throttler ! SetTarget(Some(forwarder))
-    throttler
+    println("do i get here? b")
+    val throttle = Akka.system.actorOf(Props(new TimerBasedThrottler(delayRate)))
+    println("do i get here? c")
+    throttle ! SetTarget(Some(forwarder))
+    println("do i get here? d")
+    throttle
   }
 }
 

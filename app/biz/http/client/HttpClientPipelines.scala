@@ -119,9 +119,7 @@ trait HttpClientPipelines extends Throttler {
   def sendReceiveTry: HttpRequest => Future[Try[HttpResponse]] = {
     request =>
       {
-        println(s"before:${request.uri}")
         val futureResponse = sendReceiver(request)
-        println(s"after:${request.uri}")
         futureResponse.tryMe
       }
   }
@@ -138,9 +136,14 @@ trait HttpClientPipelines extends Throttler {
     async {
       if (urlIsAllowed) {
         val p = Promise[Boolean]()
+        println("do i get here? 1")
         await(throttler) ! PromiseRequest(p)
+        println("do i get here? 2")
         await(p.future)
-        await(sendReceiveTry(request))
+        println("do i get here? 3")
+        val result = await(sendReceiveTry(request))
+        println("do i get here? 4")
+        result
       } else {
         Failure(
           UrlNotAllowedException(

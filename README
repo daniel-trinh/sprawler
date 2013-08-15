@@ -7,3 +7,4 @@
 + Implement API interface
 + add build properties file for sbt version
 + fix crawling when no "/" is passed in at the end of the URL
++ fix broken ass throttler

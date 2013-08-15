@@ -65,18 +65,18 @@ class HttpCrawlerClientSpec extends WordSpec with BeforeAndAfter with ShouldMatc
 
           val wtf = WS.url("http://localhost:3333/test/timeout").get()
 
-          //          val res = Await.result(wtf, 10.seconds)
-          //          res.status should be === 200
-
-          //          Add extra slight delay to allow timeout failure to be returned
           val timeout = ClientConnectionSettings(Akka.system).requestTimeout.length.longValue()
           val retries = HostConnectorSettings(Akka.system).maxRetries.longValue()
+          println(s"timeout:$timeout")
+          println(s"retries:$retries")
+          println(s"duration:${(timeout * (retries + 2)).milliseconds}")
 
-          val result = Await.result(request, (timeout * (retries + 2)).milliseconds)
+          //          Add extra slight delay to allow timeout failure to be returned
+          val result = Await.result(request, (timeout * (retries + 2)).seconds)
           result.isFailure should be === true
           result match {
             case p @ Failure(x) =>
-              x.toString should be === "java.lang.RuntimeException: Connection closed, reason: IdleTimeout"
+              x.toString should be === "java.lang.RuntimeException: Request timeout"
           }
         }
       }
@@ -138,7 +138,7 @@ class HttpCrawlerClientSpec extends WordSpec with BeforeAndAfter with ShouldMatc
 
           result.isFailure should be === false
           result foreach { res =>
-            res.status.value should be === 500
+            res.status.value should be === "500 Internal Server Error"
           }
         }
       }

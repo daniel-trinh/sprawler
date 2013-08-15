@@ -39,7 +39,8 @@ object ApplicationBuild extends Build {
       (scalaVersion := scalacVersion) ++
       (scalacOptions ++= scalacSettings) ++
       (ScalariformKeys.preferences := formattingPreferences) ++
-      (initialCommands := PreRun.everything): _*
+      (initialCommands := PreRun.everything) ++
+      (javaOptions in Test += "-Dconfig.file=conf/test.conf"): _* 
   ) aggregate(async) dependsOn(async)
 
 
@@ -76,7 +77,7 @@ object Dependencies {
 
   object V {
     val Spray = "1.1-M8"
-    val SprayNightly = "1.1-20130614"
+    val SprayNightly = "1.1-20130801"
     val Akka  = "2.1.4"
   }
 
