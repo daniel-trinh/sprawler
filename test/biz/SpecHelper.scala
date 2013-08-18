@@ -1,8 +1,8 @@
 package biz
 
 import biz.http.client.HttpCrawlerClient
+import play.api.test._
 import play.api.test.Helpers._
-import play.api.test.TestServer
 import scala.Some
 import scala.collection.mutable
 import play.api.libs.json.{ JsString, JsValue }
@@ -13,19 +13,54 @@ import play.core.StaticApplication
 import spray.http.Uri
 
 trait SpecHelper {
+
+  private var serverStarted = false
+  private var testServer: TestServer = null
+
   // Helper to launch test Play server and create a client for performing HTTP requests to Play server
   def localHttpTest[T](f: HttpCrawlerClient => T, port: Int = SpecHelper.port): T = {
-    running(TestServer(port)) {
-      val uri = Uri(s"http://localhost:$port")
-      println(s"uri:$uri")
-      println(s"scheme:${uri.scheme}")
-      println(s"port:${uri.authority.port}")
-
-      val client = CrawlerAgents.getClient(
-        uri = uri
-      )
-      f(client)
+    if (!serverStarted) {
+      testServer = TestServer(port)
+      startAndExecute(testServer) {
+        serverStarted = true
+        executeWithinClient(f, port)
+      }
+    } else {
+      executeWithinClient(f, port)
     }
+  }
+
+  private def executeWithinClient[T](f: HttpCrawlerClient => T, port: Int = SpecHelper.port): T = {
+    val uri = Uri(s"http://localhost:$port")
+    val client = CrawlerAgents.getClient(
+      uri = uri
+    )
+    f(client)
+  }
+
+  private def printUri(uri: Uri) {
+    println(s"uri:$uri")
+    println(s"scheme:${uri.scheme}")
+    println(s"port:${uri.authority.port}")
+  }
+
+  /**
+   * Executes a block of code in a running server.
+   */
+  private def startAndExecute[T](testServer: TestServer)(block: => T): T = {
+    synchronized {
+      try {
+        testServer.start()
+        block
+      }
+    }
+  }
+
+  /**
+   * Shuts down the testServer. This should be run after all tests are done with using the server.
+   */
+  def shutdownTestServer() {
+    testServer.stop()
   }
 }
 

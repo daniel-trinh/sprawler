@@ -134,7 +134,6 @@ case class HttpCrawlerClient(uri: Uri) extends HttpClientPipelines {
 
   private def fetchRules: Future[Try[BaseRobotRules]] = {
     val request = Get(domain+"/robots.txt")
-
     fetchRobotRules(request)
   }
 }
@@ -170,6 +169,8 @@ object RobotRules {
  */
 trait Throttler {
 
+  private var throttlerSet = false
+
   /**
    * This duration value represents how
    * @return a future'd duration of how often to poop
@@ -185,7 +186,6 @@ trait Throttler {
      */
     def receive = {
       case PromiseRequest(promise) => {
-        println("do i get here? !")
         promise success true
       }
     }
@@ -195,14 +195,10 @@ trait Throttler {
    * [[akka.contrib.throttle.TimerBasedThrottler]] that throttles messages sent to forwarder.
    * Delay rate is determined by [[biz.http.client.Throttler]].crawlDelayRate
    */
-  lazy val throttler: Future[ActorRef] = async {
-    println("do i get here? a")
+  def throttler: Future[ActorRef] = async {
     val delayRate = await(crawlDelayRate)
-    println("do i get here? b")
     val throttle = Akka.system.actorOf(Props(new TimerBasedThrottler(delayRate)))
-    println("do i get here? c")
     throttle ! SetTarget(Some(forwarder))
-    println("do i get here? d")
     throttle
   }
 }

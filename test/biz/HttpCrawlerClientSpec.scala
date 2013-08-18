@@ -5,11 +5,12 @@ import biz.CrawlerExceptions._
 import org.scalatest._
 import org.scalatest.matchers.ShouldMatchers
 import play.api.test.Helpers._
-import play.api.test.TestServer
+import play.api.test.{ WithApplication, TestServer }
 import play.core.StaticApplication
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.concurrent.Akka
 import play.api.Play.current
+import play.api.libs.ws.WS
 import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
 import scala.util.{ Try, Failure, Success }
@@ -18,16 +19,21 @@ import spray.can.client.ClientConnectionSettings
 import biz.http.client.HttpCrawlerClient
 import biz.crawler.CrawlerActor
 import spray.http.Uri
-import play.api.libs.ws.WS
 
-class HttpCrawlerClientSpec extends WordSpec with BeforeAndAfter with ShouldMatchers with PrivateMethodTester with SpecHelper {
+class HttpCrawlerClientSpec
+    extends WordSpec
+    with BeforeAndAfter
+    with BeforeAndAfterAll
+    with ShouldMatchers
+    with PrivateMethodTester
+    with SpecHelper {
+
+  override def beforeAll() {
+    // Launch play app for Akka.system
+    new StaticApplication(new java.io.File("."))
+  }
 
   "HttpCrawlerClient" when {
-    before {
-      // Launch play app for Akka.system
-      new StaticApplication(new java.io.File("."))
-
-    }
     ".get(path)" should {
       // TODO: use fake stubbed endpoints instead of real ones
       "fetch a simple https:// url" in {
@@ -62,8 +68,6 @@ class HttpCrawlerClientSpec extends WordSpec with BeforeAndAfter with ShouldMatc
       "handle timeouts" in {
         localHttpTest { client =>
           val request = client.get("/test/timeout")
-
-          val wtf = WS.url("http://localhost:3333/test/timeout").get()
 
           val timeout = ClientConnectionSettings(Akka.system).requestTimeout.length.longValue()
           val retries = HostConnectorSettings(Akka.system).maxRetries.longValue()
