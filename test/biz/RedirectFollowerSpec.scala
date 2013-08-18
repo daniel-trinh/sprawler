@@ -12,10 +12,8 @@ import biz.CrawlerExceptions.RedirectLimitReachedException
 import scala.util.Failure
 import play.core.StaticApplication
 
+// This spec should not be run by its own, instead it should be run indirectly through ServerDependentSpecs
 class RedirectFollowerSpec extends WordSpec with ShouldMatchers with BeforeAndAfter with SpecHelper {
-  // Launch play app for Akka.system
-  new StaticApplication(new java.io.File("."))
-
   "RedirectFollower" should {
     ".followRedirects" when {
       "infinite redirects" in {

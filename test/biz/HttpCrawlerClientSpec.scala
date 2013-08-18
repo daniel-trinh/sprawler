@@ -17,21 +17,16 @@ import scala.util.{ Try, Failure, Success }
 import spray.can.client.HostConnectorSettings
 import spray.can.client.ClientConnectionSettings
 import biz.http.client.HttpCrawlerClient
-import biz.crawler.CrawlerActor
 import spray.http.Uri
+import play.api.Logger
 
+// This spec should not be run by its own, instead it should be run indirectly through ServerDependentSpecs
 class HttpCrawlerClientSpec
     extends WordSpec
     with BeforeAndAfter
-    with BeforeAndAfterAll
     with ShouldMatchers
     with PrivateMethodTester
     with SpecHelper {
-
-  override def beforeAll() {
-    // Launch play app for Akka.system
-    new StaticApplication(new java.io.File("."))
-  }
 
   "HttpCrawlerClient" when {
     ".get(path)" should {
@@ -71,9 +66,13 @@ class HttpCrawlerClientSpec
 
           val timeout = ClientConnectionSettings(Akka.system).requestTimeout.length.longValue()
           val retries = HostConnectorSettings(Akka.system).maxRetries.longValue()
-          println(s"timeout:$timeout")
-          println(s"retries:$retries")
-          println(s"duration:${(timeout * (retries + 2)).milliseconds}")
+
+          Logger.debug(
+            s"""
+              |timeout:$timeout
+              |retries:$retries
+              |duration:${(timeout * (retries + 2)).milliseconds}
+            """.stripMargin)
 
           //          Add extra slight delay to allow timeout failure to be returned
           val result = Await.result(request, (timeout * (retries + 2)).seconds)

@@ -136,13 +136,9 @@ trait HttpClientPipelines extends Throttler {
     async {
       if (urlIsAllowed) {
         val p = Promise[Boolean]()
-        println("do i get here? 1")
         await(throttler) ! PromiseRequest(p)
-        println("do i get here? 2")
         await(p.future)
-        println("do i get here? 3")
         val result = await(sendReceiveTry(request))
-        println("do i get here? 4")
         result
       } else {
         Failure(

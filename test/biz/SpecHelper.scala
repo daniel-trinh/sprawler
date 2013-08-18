@@ -60,7 +60,9 @@ trait SpecHelper {
    * Shuts down the testServer. This should be run after all tests are done with using the server.
    */
   def shutdownTestServer() {
-    testServer.stop()
+    if (testServer != null) {
+      testServer.stop()
+    }
   }
 }
 

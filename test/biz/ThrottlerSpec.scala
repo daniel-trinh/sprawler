@@ -8,12 +8,8 @@ import scala.concurrent.duration._
 import play.api.libs.concurrent.Execution.Implicits._
 import play.core.StaticApplication
 
-class ThrottlerSpec extends WordSpec with ShouldMatchers with BeforeAndAfter with BeforeAndAfterAll {
-  override def beforeAll() {
-    // Launch play app for Akka.system
-    new StaticApplication(new java.io.File("."))
-  }
-
+// This spec should not be run by its own, instead it should be run indirectly through ServerDependentSpecs
+class ThrottlerSpec extends WordSpec with ShouldMatchers with BeforeAndAfter {
   "throttler" should {
     "throttle multiple actions in parallel" when {
       "throttle multiple actions A" in {
@@ -23,7 +19,6 @@ class ThrottlerSpec extends WordSpec with ShouldMatchers with BeforeAndAfter wit
         DummyThrottler.testThrottling()
       }
     }
-
     "throttle and timeout requests that are over the delay rate" in {
       DummyThrottler.testTimeoutThrottling()
     }

@@ -24,6 +24,7 @@ import HttpMethods._
 import spray.http.HttpResponse
 import akka.contrib.throttle.Throttler.SetTarget
 import akka.contrib.throttle.Throttler.Rate
+import play.api.Logger
 
 /**
  * Creates a HTTP client scoped by domain, for performing GET requests
@@ -110,7 +111,7 @@ case class HttpCrawlerClient(uri: Uri) extends HttpClientPipelines {
       await(robotRules) match {
         case Success(rules) =>
           val delay = rules.getCrawlDelay
-          println(s"delay!!!!:$delay")
+          Logger.debug(s"delay:$delay")
           1 msgsPer delay.milliseconds
         case Failure(exception) =>
           // TODO: should this just throw the exception instead? at the very least, needs to log
