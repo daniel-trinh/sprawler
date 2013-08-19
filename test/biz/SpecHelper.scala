@@ -77,6 +77,7 @@ trait SpecHelper {
    * Shuts down the testServer. This should be run after all tests are done with using the server.
    */
   def shutdownTestServer() {
+    play.Logger.debug("test server going down")
     if (testServer != null) {
       testServer.stop()
     }
@@ -91,7 +92,7 @@ object SpecHelper {
    * Should match up with url of Play running in test mode, but syncing is not guaranteed.
    * This val is just for convenience.
    */
-  val testDomain = s"localhost"
+  val testDomain = s"http://localhost:$port"
 
   /**
    * Used for testing, implements the methods for Channel.

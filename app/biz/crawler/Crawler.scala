@@ -205,10 +205,11 @@ sealed trait AbsoluteCrawlerUrl extends CrawlerUrl {
 }
 
 case class AbsoluteUrl(fromUri: Uri, uri: Uri) extends AbsoluteCrawlerUrl {
-  val prefixLength = if (uri.scheme == "http://") {
-    7
-  } else if (uri.scheme == "https://") {
-    8
+
+  val prefixLength = if (uri.scheme == "http") {
+    4
+  } else if (uri.scheme == "https") {
+    5
   } else {
     throw UnprocessableUrlException(fromUri.toString(), uri.toString(), "Url must start with http:// or https://")
   }
