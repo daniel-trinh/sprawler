@@ -25,7 +25,8 @@ class ServerDependentSpecs extends Specs(
 
   override def beforeAll() {
     // Launch play app for Akka.system
-    new StaticApplication(new java.io.File("."))
+    //    new StaticApplication(new java.io.File("."))
+    startAndExecuteServer(SpecHelper.port)()
   }
 
   override def afterAll() {

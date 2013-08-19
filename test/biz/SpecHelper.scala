@@ -13,7 +13,7 @@ import play.api.libs.iteratee.Concurrent.Channel
 import play.api.libs.iteratee.Input
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.json.JsString
-import play.api.test.TestServer
+import play.api.test.{ FakeApplication, TestServer }
 
 import spray.http.Uri
 import scala.concurrent.duration._
@@ -21,11 +21,11 @@ import scala.concurrent.{ Await, Promise, Future }
 
 trait SpecHelper {
 
-  private var serverStarted = false
-  private var testServer: TestServer = null
+  import SpecHelper.{ serverStarted, testServer }
 
   /**
-   * Helper to launch test Play server and create a client for performing HTTP requests to Play server
+   * Helper to launch test Play server and create a client for performing HTTP requests to Play server.
+   * Will start an accompanying FakeApplication (with Akka.system) to go along with the server.
    *
    * WARNING: the test Play server launched here is not sandboxed per usage -- it is shared
    * and reused across every instance that this method is called. Call <code>shutdownTestServer</code>
@@ -36,13 +36,7 @@ trait SpecHelper {
    * @tparam T Return type of the code that gets executed with f. Can be Unit.
    */
   def localHttpTest[T](f: HttpCrawlerClient => T, port: Int = SpecHelper.port): T = {
-    if (!serverStarted) {
-      testServer = TestServer(port)
-      startAndExecute(testServer) {
-        serverStarted = true
-        executeWithinClient(f, port)
-      }
-    } else {
+    startAndExecuteServer(port) {
       executeWithinClient(f, port)
     }
   }
@@ -64,10 +58,16 @@ trait SpecHelper {
   /**
    * Executes a block of code in a running server.
    */
-  private def startAndExecute[T](testServer: TestServer)(block: => T): T = {
+  def startAndExecuteServer[T](port: Int)(block: => T): T = {
     synchronized {
       try {
-        testServer.start()
+        if (!serverStarted) {
+          play.Logger.debug("WTF WTF WTF1")
+          testServer = TestServer(port)
+          testServer.start()
+          play.Logger.debug("WTF WTF WTF2")
+          serverStarted = true
+        }
         block
       }
     }
@@ -80,11 +80,15 @@ trait SpecHelper {
     play.Logger.debug("test server going down")
     if (testServer != null) {
       testServer.stop()
+      serverStarted = false
     }
   }
 }
 
 object SpecHelper {
+
+  private[SpecHelper] var serverStarted = false
+  private[SpecHelper] var testServer: TestServer = null
 
   val port = 3333
 
