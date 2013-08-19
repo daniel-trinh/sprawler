@@ -8,3 +8,8 @@
 + add build properties file for sbt version
 + fix crawling when no "/" is passed in at the end of the URL
 + fix broken ass throttler
+
+### Notes
+
++ So yea.. don't shut down Akka.system or restart it, the code for throttling HTTP requests
+  relies on it being up, since the throttling mechanism uses akka actors.

@@ -7,58 +7,22 @@ import scala.concurrent.{ Await, Promise, Future }
 import scala.concurrent.duration._
 import play.api.libs.concurrent.Execution.Implicits._
 import play.core.StaticApplication
+import biz.SpecHelper.DummyThrottler
 
 // This spec should not be run by its own, instead it should be run indirectly through ServerDependentSpecs
-class ThrottlerSpec extends WordSpec with ShouldMatchers with BeforeAndAfter {
+@DoNotDiscover
+class ThrottlerSpec extends WordSpec with ShouldMatchers with BeforeAndAfter with DummyThrottler {
   "throttler" should {
     "throttle multiple actions in parallel" when {
       "throttle multiple actions A" in {
-        DummyThrottler.testThrottling()
+        testThrottling()
       }
       "throttle multiple actions B" in {
-        DummyThrottler.testThrottling()
+        testThrottling()
       }
     }
     "throttle and timeout requests that are over the delay rate" in {
-      DummyThrottler.testTimeoutThrottling()
-    }
-  }
-
-  object DummyThrottler extends Throttler {
-    val crawlDelayRate = Future(Rate(1, 1.second))
-
-    def testThrottling() {
-      val promiseOne = Promise[Boolean]()
-      val promiseTwo = Promise[Boolean]()
-
-      val actorRef = Await.result(DummyThrottler.throttler, 5.seconds)
-
-      actorRef ! PromiseRequest(promiseOne)
-      actorRef ! PromiseRequest(promiseTwo)
-
-      val resOne = Await.result(promiseOne.future, 5.seconds)
-      val resTwo = Await.result(promiseTwo.future, 5.seconds)
-
-      resOne should be === true
-      resTwo should be === true
-    }
-
-    def testTimeoutThrottling() {
-      val promiseOne = Promise[Boolean]()
-      val promiseTwo = Promise[Boolean]()
-
-      val actorRef = Await.result(DummyThrottler.throttler, 5.seconds)
-
-      actorRef ! PromiseRequest(promiseOne)
-      actorRef ! PromiseRequest(promiseTwo)
-
-      val duration = 1.microsecond
-      val timeoutError = intercept[java.util.concurrent.TimeoutException] {
-        Await.result(promiseTwo.future, duration)
-      }
-
-      timeoutError.getMessage should be === s"Futures timed out after [$duration]"
+      testTimeoutThrottling()
     }
   }
 }
-

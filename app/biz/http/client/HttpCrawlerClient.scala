@@ -170,8 +170,6 @@ object RobotRules {
  */
 trait Throttler {
 
-  private var throttlerSet = false
-
   /**
    * This duration value represents how
    * @return a future'd duration of how often to poop
@@ -196,8 +194,9 @@ trait Throttler {
    * [[akka.contrib.throttle.TimerBasedThrottler]] that throttles messages sent to forwarder.
    * Delay rate is determined by [[biz.http.client.Throttler]].crawlDelayRate
    */
-  def throttler: Future[ActorRef] = async {
+  lazy val throttler: Future[ActorRef] = async {
     val delayRate = await(crawlDelayRate)
+    play.Logger.debug(s"crawlDelayRate:$delayRate")
     val throttle = Akka.system.actorOf(Props(new TimerBasedThrottler(delayRate)))
     throttle ! SetTarget(Some(forwarder))
     throttle

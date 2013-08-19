@@ -6,6 +6,7 @@ import biz.http.client.RobotRules
 import play.core.StaticApplication
 
 // This spec should not be run by its own, instead it should be run indirectly through ServerDependentSpecs
+@DoNotDiscover
 class RobotRulesSpec extends WordSpec with ShouldMatchers with BeforeAndAfterAll with SpecHelper {
 
   "RobotRules" when {

@@ -1,23 +1,40 @@
 package biz
 
-import biz.http.client.HttpCrawlerClient
-import play.api.test._
-import play.api.test.Helpers._
-import scala.Some
+import akka.contrib.throttle.Throttler.Rate
+
+import biz.http.client.{ PromiseRequest, Throttler, HttpCrawlerClient }
+import biz.crawler.{ CrawlerAgents, Streams }
+
 import scala.collection.mutable
+import org.scalatest._
+
 import play.api.libs.json.{ JsString, JsValue }
 import play.api.libs.iteratee.Concurrent.Channel
 import play.api.libs.iteratee.Input
-import biz.crawler.{ CrawlerAgents, Streams }
-import play.core.StaticApplication
+import play.api.libs.concurrent.Execution.Implicits._
+import play.api.libs.json.JsString
+import play.api.test.TestServer
+
 import spray.http.Uri
+import scala.concurrent.duration._
+import scala.concurrent.{ Await, Promise, Future }
 
 trait SpecHelper {
 
   private var serverStarted = false
   private var testServer: TestServer = null
 
-  // Helper to launch test Play server and create a client for performing HTTP requests to Play server
+  /**
+   * Helper to launch test Play server and create a client for performing HTTP requests to Play server
+   *
+   * WARNING: the test Play server launched here is not sandboxed per usage -- it is shared
+   * and reused across every instance that this method is called. Call <code>shutdownTestServer</code>
+   * to shut down the server that this method uses.
+   *
+   * @param f The code to execute with the localhost-scoped [[biz.http.client.HttpCrawlerClient]].
+   * @param port The port to run the server on.
+   * @tparam T Return type of the code that gets executed with f. Can be Unit.
+   */
   def localHttpTest[T](f: HttpCrawlerClient => T, port: Int = SpecHelper.port): T = {
     if (!serverStarted) {
       testServer = TestServer(port)
@@ -102,4 +119,42 @@ object SpecHelper {
   class DummyStream extends Streams {
     lazy val channel = new DummyChannel(new mutable.ArrayBuffer[JsValue]())
   }
+
+  trait DummyThrottler extends Throttler with WordSpec with ShouldMatchers {
+    val crawlDelayRate = Future(Rate(1, 1.second))
+
+    def testThrottling() {
+      val promiseOne = Promise[Boolean]()
+      val promiseTwo = Promise[Boolean]()
+
+      val actorRef = Await.result(throttler, 5.seconds)
+
+      actorRef ! PromiseRequest(promiseOne)
+      actorRef ! PromiseRequest(promiseTwo)
+
+      val resOne = Await.result(promiseOne.future, 5.seconds)
+      val resTwo = Await.result(promiseTwo.future, 5.seconds)
+
+      resOne should be === true
+      resTwo should be === true
+    }
+
+    def testTimeoutThrottling() {
+      val promiseOne = Promise[Boolean]()
+      val promiseTwo = Promise[Boolean]()
+
+      val actorRef = Await.result(throttler, 5.seconds)
+
+      actorRef ! PromiseRequest(promiseOne)
+      actorRef ! PromiseRequest(promiseTwo)
+
+      val duration = 1.microsecond
+      val timeoutError = intercept[java.util.concurrent.TimeoutException] {
+        Await.result(promiseTwo.future, duration)
+      }
+
+      timeoutError.getMessage should be === s"Futures timed out after [$duration]"
+    }
+  }
+
 }

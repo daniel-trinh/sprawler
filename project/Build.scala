@@ -122,9 +122,9 @@ object Dependencies {
 
   // Testing dependencies
   val testDeps = Seq(
-    "com.typesafe.akka" %% "akka-testkit"                % V.Akka % "test",
-    "org.scalatest"     %  "scalatest_2.10"              % "1.9.1" % "test",
-    "org.scalamock"     %% "scalamock-scalatest-support" % "3.0.1" % "test"
+    "com.typesafe.akka" %% "akka-testkit"                % V.Akka    % "test",
+    "org.scalatest"     %  "scalatest_2.10"              % "2.0.M5b" % "test",
+    "org.scalamock"     %% "scalamock-scalatest-support" % "3.0.1"   % "test"
   )
   val Seq(akkaTestkit, scalaTest, scalaMock) = testDeps
 }

@@ -28,6 +28,7 @@ import spray.client.pipelining._
 import java.net.URI
 
 import spray.http.{ Uri, HttpResponse }
+import play.api.Logger
 
 // url not crawlable due to robots
 // timeout
@@ -120,7 +121,7 @@ object CrawlerAgents {
         client
       case None =>
         val httpClient = HttpCrawlerClient(uri)
-        println(s"httpClientUri:$uri")
+        Logger.debug(s"httpClientUri:$uri")
         crawlerClients send { s =>
           // avoid updating the hashtable if another client has already been added asynchronously
           s.getOrElseUpdate(urlKey, httpClient)

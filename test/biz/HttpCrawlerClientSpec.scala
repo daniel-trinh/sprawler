@@ -21,6 +21,7 @@ import spray.http.Uri
 import play.api.Logger
 
 // This spec should not be run by its own, instead it should be run indirectly through ServerDependentSpecs
+@DoNotDiscover
 class HttpCrawlerClientSpec
     extends WordSpec
     with BeforeAndAfter
@@ -88,11 +89,13 @@ class HttpCrawlerClientSpec
           val requestList = List(
             client.get("/robots.txt"),
             client.get("/robots.txt"),
+            client.get("/robots.txt"),
             client.get("/robots.txt")
           )
           val requests = Future.sequence(requestList)
           val timeout = intercept[java.util.concurrent.TimeoutException] {
             val result = Await.result(requests, CrawlerConfig.defaultCrawlDelay.milliseconds)
+            println(result)
           }
           timeout.getMessage should be === s"Futures timed out after [${CrawlerConfig.defaultCrawlDelay} milliseconds]"
         }
@@ -100,7 +103,6 @@ class HttpCrawlerClientSpec
       "not throttle requests to different domains" in {
         localHttpTest { client =>
           val requestList = List(
-            client.get("/robots.txt"),
             HttpCrawlerClient("https://www.github.com").get("/robots.txt"),
             HttpCrawlerClient("https://www.youtube.com").get("/robots.txt"),
             HttpCrawlerClient("https://www.google.com").get("/robots.txt")

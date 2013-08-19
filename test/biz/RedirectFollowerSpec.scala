@@ -13,6 +13,7 @@ import scala.util.Failure
 import play.core.StaticApplication
 
 // This spec should not be run by its own, instead it should be run indirectly through ServerDependentSpecs
+@DoNotDiscover
 class RedirectFollowerSpec extends WordSpec with ShouldMatchers with BeforeAndAfter with SpecHelper {
   "RedirectFollower" should {
     ".followRedirects" when {
