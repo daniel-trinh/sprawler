@@ -176,7 +176,7 @@ sealed abstract class CrawlerUrl extends CheckUrlCrawlability {
    * @return
    */
   def nextUrl(nextUrl: String): CrawlerUrl = {
-    if (uri.scheme == "https://" || uri.scheme == "http://") {
+    if (uri.scheme == "https" || uri.scheme == "http") {
       AbsoluteUrl(uri, nextUrl)
     } else {
       throw UnprocessableUrlException(uri.toString(), nextUrl, UnprocessableUrlException.MissingHttpPrefix)
@@ -188,8 +188,8 @@ sealed trait AbsoluteCrawlerUrl extends CrawlerUrl {
   def prefixLength: Int
 
   val domain: Try[String] = {
-    val prependedUrl = if (uri.scheme != "https://" && uri.scheme != "http://") {
-      s"http://${uri.authority.toString()}"
+    val prependedUrl = if (uri.scheme != "https" && uri.scheme != "http") {
+      s"http${uri.authority.toString()}"
     } else {
       s"${uri.scheme}${uri.toString()}"
     }
@@ -211,7 +211,9 @@ case class AbsoluteUrl(fromUri: Uri, uri: Uri) extends AbsoluteCrawlerUrl {
   } else if (uri.scheme == "https") {
     5
   } else {
-    throw UnprocessableUrlException(fromUri.toString(), uri.toString(), "Url must start with http:// or https://")
+    play.Logger.debug(s"uri scheme:#$uri.scheme#")
+    play.Logger.debug(s"fromUri:$fromUri#")
+    throw UnprocessableUrlException(fromUri.toString(), uri.toString(), "Url must start with http or https")
   }
 }
 
