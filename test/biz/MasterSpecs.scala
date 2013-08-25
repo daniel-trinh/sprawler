@@ -12,15 +12,17 @@ import org.scalatest._
 import play.core.StaticApplication
 
 /**
- * There can only be one!
- * Contains all specs to run with a global before / after hook, which is necessary
- * to get
+ * Container for holding all of the specs.
+ * TODO: split this into ServerDependentSpecs when sbt 0.13 is out,
+ * and @DoNotDiscover annotation works with ~ test-only.
  */
-class ServerDependentSpecs extends Specs(
+class MasterSpecs extends Specs(
   new HttpCrawlerClientSpec,
   new RedirectFollowerSpec,
   new RobotRulesSpec,
-  new ThrottlerSpec
+  new ThrottlerSpec,
+  new StreamsSpec,
+  new XmlParserSpec
 ) with BeforeAndAfterAll with SpecHelper {
 
   override def beforeAll() {

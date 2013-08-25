@@ -126,10 +126,7 @@ class CrawlerActor(val channel: Concurrent.Channel[JsValue], val crawlerUrl: Cra
               streamJsonErrorFromException(err, eofAndEnd = false)
             case Success(response) =>
               streamJsonResponse(info.fromUri.toString(), info.uri.toString(), response)
-              val code = response.status.intValue
-              if (code >= 300 && code < 400) {
-                followRedirects(info, Future(Success(response)))
-              }
+              followRedirects(info, Future(Success(response)))
           }
           cleanup()
         }

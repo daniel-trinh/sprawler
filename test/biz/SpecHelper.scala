@@ -62,10 +62,8 @@ trait SpecHelper {
     synchronized {
       try {
         if (!serverStarted) {
-          play.Logger.debug("WTF WTF WTF1")
           testServer = TestServer(port)
           testServer.start()
-          play.Logger.debug("WTF WTF WTF2")
           serverStarted = true
         }
         block

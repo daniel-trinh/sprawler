@@ -2,6 +2,8 @@ import sbt._
 import Keys._
 import com.typesafe.sbt.SbtScalariform
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
+import com.tuplejump.sbt.yeoman.Yeoman
+
 
 object ApplicationBuild extends Build {
 
@@ -40,7 +42,8 @@ object ApplicationBuild extends Build {
       (scalacOptions ++= scalacSettings) ++
       (ScalariformKeys.preferences := formattingPreferences) ++
       (initialCommands := PreRun.everything) ++
-      (javaOptions in Test += "-Dconfig.file=conf/test.conf"): _* 
+      (javaOptions in Test += "-Dconfig.file=conf/test.conf") ++
+      Yeoman.yeomanSettings: _*
   ) aggregate(async) dependsOn(async)
 
 

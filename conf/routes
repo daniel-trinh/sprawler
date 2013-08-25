@@ -11,9 +11,9 @@ GET     /helloWorld                 controllers.Application.helloWorld
 GET     /goodbyeWorld               controllers.Application.goodbyeWorld
 
 # Web crawling code
-
 GET     /deadLinks                  controllers.LinkCrawler.deadLinks(url: String)
 GET     /api/deadLinks              controllers.LinkCrawler.deadLinksSSE(url: String)
+
 # Robots.txt
 GET     /robots.txt                 controllers.Assets.at(path="/public", file="robots.txt")
 
@@ -27,3 +27,8 @@ GET     /test/infiniteRedirect      controllers.TestDummy.infiniteRedirect
 GET     /test/timeout               controllers.TestDummy.timeout
 GET     /test/notFound              controllers.TestDummy.notFound
 GET     /test/internalError         controllers.TestDummy.internalError
+
+# Yeoman Routes
+GET     /ui                     com.tuplejump.playYeoman.Yeoman.index
+->      /ui/                    yeoman.Routes
+GET     /                       com.tuplejump.playYeoman.Yeoman.redirectRoot(base="/ui/")

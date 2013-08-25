@@ -54,7 +54,7 @@ class StreamsSpec extends WordSpec with ShouldMatchers with BeforeAndAfter {
     }
     ".streamJsonErrorFromException" should {
       "push an exception, convert it to json, and close the channel" in {
-        dummyStream.streamJsonErrorFromException(UrlNotAllowedException("host", "path", "url sucks"))
+        dummyStream.streamJsonErrorFromException(UrlNotAllowedException("host", "path", "url sucks"), eofAndEnd = true)
         dummyStream.channel.bucket should be === mutable.ArrayBuffer(
           JsObject(
             Seq(

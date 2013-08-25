@@ -30,7 +30,18 @@ class RedirectFollowerSpec extends WordSpec with ShouldMatchers with BeforeAndAf
         }
       }
       "single redirect" in {
-          
+        val redirectRoute = s"${SpecHelper.testDomain}${routes.TestDummy.redirect()}"
+        val redirectUrl = AbsoluteUrl(redirectRoute, redirectRoute)
+        val redirector = DummyRedirector(redirectUrl)
+
+        localHttpTest { client =>
+          val request = client.get(routes.TestDummy.redirect().url)
+          val result = Await.result(redirector.followRedirects(redirectUrl, request), 5.seconds)
+          result.isFailure should be === false
+          result.map { response =>
+            response.status.intValue should be === 200
+          }
+        }
       }
     }
   }
