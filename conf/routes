@@ -3,7 +3,6 @@
 # ~~~~
 
 # Home page
-GET     /                           controllers.Application.index
 GET     /redeem/:id                 controllers.Application.redeem(id: Int)
 GET     /waiting                    controllers.Application.waiting
 GET     /echo                       controllers.Application.echo
@@ -29,6 +28,6 @@ GET     /test/notFound              controllers.TestDummy.notFound
 GET     /test/internalError         controllers.TestDummy.internalError
 
 # Yeoman Routes
-GET     /ui                     com.tuplejump.playYeoman.Yeoman.index
-->      /ui/                    yeoman.Routes
-GET     /                       com.tuplejump.playYeoman.Yeoman.redirectRoot(base="/ui/")
+GET     /ui                     	com.tuplejump.playYeoman.Yeoman.index
+->      /ui/                    	yeoman.Routes
+GET     /                       	com.tuplejump.playYeoman.Yeoman.redirectRoot(base="/ui/")

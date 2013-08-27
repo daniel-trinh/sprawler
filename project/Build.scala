@@ -33,6 +33,7 @@ object ApplicationBuild extends Build {
     base = file("../webcrawler/async")
   )
 
+
   val main = play.Project(
     appName, appVersion, appDependencies
   ).settings(
@@ -42,7 +43,9 @@ object ApplicationBuild extends Build {
       (scalacOptions ++= scalacSettings) ++
       (ScalariformKeys.preferences := formattingPreferences) ++
       (initialCommands := PreRun.everything) ++
+      // Set alternate conf file in test mode
       (javaOptions in Test += "-Dconfig.file=conf/test.conf") ++
+      // Add yeoman commands to sbt 
       Yeoman.yeomanSettings: _*
   ) aggregate(async) dependsOn(async)
 
