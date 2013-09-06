@@ -23,6 +23,7 @@ trait Streams {
     channel push json
 
     if (eofAndEnd) {
+      play.Logger.debug("channel is closing....")
       cleanup()
     }
   }
@@ -59,7 +60,7 @@ trait Streams {
       case error @ UnknownException(_, _) =>
         streamJsonError(Json.toJson(error), eofAndEnd)
       case error: Throwable =>
-        streamJsonError(Json.toJson(UnknownException(error.getMessage)))
+        streamJsonError(Json.toJson(UnknownException(error.getMessage)), eofAndEnd)
         // Log this error, because something unexpected happened
         play.Logger.error(error.getStackTraceString)
     }

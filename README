@@ -8,6 +8,8 @@
 + add build properties file for sbt version
 + fix crawling when no "/" is passed in at the end of the URL
 + fix broken ass throttler
++ fix invalid API URLs to server so they dont return html
++ fix errors / warnings that occur when urls with '#' are in them
 
 ### Notes
 

@@ -1,5 +1,14 @@
+# Ignore UI tool related files
 node_modules
 dist
 .tmp
 .sass-cache
 app/bower_components
+
+# Ignore coffee auto generated  javascript files
+app/scripts/controllers/*.js
+app/scripts/filters/*.js
+app/scripts/*.js
+test/spec/controllers/*.js
+test/spec/filters/*.js
+test/spec/*.js

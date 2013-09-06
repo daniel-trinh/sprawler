@@ -47,18 +47,27 @@ class Crawler(url: String) extends Streams {
   val domain = request.uri.authority.host
 
   val tryCrawlerUrl: Try[CrawlerUrl] = {
-    if (url.startsWith("https://") || url.startsWith("http://")) {
-      Success(AbsoluteUrl(url, url))
-    } else {
-      Failure(UnprocessableUrlException(url, url, UnprocessableUrlException.MissingHttpPrefix))
+
+    val urlToCrawl = AbsoluteUrl(url, url)
+    val isCrawlable = urlToCrawl.isCrawlable
+
+    isCrawlable match {
+      case Success(true)  => Success(AbsoluteUrl(url, url))
+      case Failure(error) => Failure(error)
     }
   }
 
   var channel: Concurrent.Channel[JsValue] = null
-  val jsStream = Concurrent.unicast[JsValue] { chan =>
+  val jsStream = Concurrent.unicast[JsValue]({ chan =>
     channel = chan
     onStart(channel)
-  }
+  }, {
+    play.Logger.info("Channel closing..")
+    channel.eofAndEnd()
+  }, { (str, input) =>
+    play.Logger.error("An error is causing the channel to close..")
+    channel.eofAndEnd()
+  })
 
   /**
    * Startup function to be called when the crawler Enumerator feed starts being consumed by an
@@ -79,20 +88,24 @@ class Crawler(url: String) extends Streams {
 
         crawlerUrl.domain match {
           case Success(d) =>
+            // Start the crawling process by sending the crawler actor a url to crawl
             crawlerActor ! crawlerUrl
           case Failure(error) =>
-            streamJsonErrorFromException(UnprocessableUrlException(url, url, error.getMessage))
+            streamJsonErrorFromException(error)
+            cleanup()
         }
       }
-      case Failure(error) => streamJsonErrorFromException(error)
+      case Failure(error) => {
+        streamJsonErrorFromException(error)
+        cleanup()
+      }
     }
-
   }
-
 }
 
 /**
  * Things that need to be shared across the crawler's session
+ * TODO: move visited urls into Redis
  */
 object CrawlerAgents {
 
@@ -185,8 +198,6 @@ sealed abstract class CrawlerUrl extends CheckUrlCrawlability {
 }
 
 sealed trait AbsoluteCrawlerUrl extends CrawlerUrl {
-  def prefixLength: Int
-
   val domain: Try[String] = {
     val prependedUrl = if (uri.scheme != "https" && uri.scheme != "http") {
       s"http${uri.authority.toString()}"
@@ -204,18 +215,7 @@ sealed trait AbsoluteCrawlerUrl extends CrawlerUrl {
   }
 }
 
-case class AbsoluteUrl(fromUri: Uri, uri: Uri) extends AbsoluteCrawlerUrl {
-
-  val prefixLength = if (uri.scheme == "http") {
-    4
-  } else if (uri.scheme == "https") {
-    5
-  } else {
-    play.Logger.debug(s"uri scheme:#$uri.scheme#")
-    play.Logger.debug(s"fromUri:$fromUri#")
-    throw UnprocessableUrlException(fromUri.toString(), uri.toString(), "Url must start with http or https")
-  }
-}
+case class AbsoluteUrl(fromUri: Uri, uri: Uri) extends AbsoluteCrawlerUrl
 
 //case class CrawlerUrl(fromUri: String, url: Uri)
 
@@ -225,31 +225,79 @@ trait CheckUrlCrawlability { this: CrawlerUrl =>
    * Tests if the provided url's UrlHelper matches the base crawler's UrlHelper.
    * TPDs are used similar to how SHA's are used to identify code states in git.
    * Used to check if toUrl is on the same domain as the origin URL.
-   * TODO: fix this doc example
    * {{{
    *  val url = CrawlerUrl("https://www.github.com/some/path", "github.com")
-   *  url.sameTPD
+   *  url.sameDomain
    *  => true
    *
    *  val url = CrawlerUrl("https://www.github.com/some/path", "google.com")
-   *  url.sameTPD
+   *  url.sameDomain
    *  => false
    * }}}
-   * @param crawlerUrl
    */
-  def sameTPD(crawlerUrl: CrawlerUrl): Boolean = {
-    if (this.domain.get == crawlerUrl.domain.get)
+  def sameDomain: Boolean = {
+    if (this.fromUri.authority.host == this.uri.authority.host)
       true
     else
       false
   }
 
   val isWithinDepth: Boolean = {
-    depth <= CrawlerConfig.maxDepth
+    depth >= 0
+  }
+
+  val hasValidScheme: Boolean = {
+    val scheme = this.uri.scheme
+    if (scheme == "http" || scheme == "https")
+      true
+    else
+      false
+  }
+
+  val hasValidDomain: Boolean = {
+    val domain = this.uri.authority.host
+    if (domain.toString == "")
+      false
+    else
+      true
   }
 
   // May report false negatives because of Agent behavior
   val isVisited: Boolean = CrawlerAgents.visitedUrls().contains(uri.toString())
 
-  def isCrawlable(crawlerUrl: CrawlerUrl): Boolean = !isVisited && sameTPD(crawlerUrl)
+  /**
+   * This method determines whether or not this url can be crawled.
+   *
+   * A url is crawlable if:
+   * - Domain/Hostnames match
+   * - Scheme is http or https
+   * - The url hasn't already been crawled
+   *
+   * @return Success(true) if crawlable, otherwise a Failure[[biz.CrawlerExceptions.UnprocessableUrlException]]
+   *         is returned, with the reason why the URL couldn't be crawled.
+   */
+  def isCrawlable: Try[Boolean] = {
+
+    def generateUrlError(message: String): Try[Boolean] = {
+      Failure(
+        UnprocessableUrlException(
+          fromUrl = this.fromUri.toString(),
+          toUrl = this.uri.toString(),
+          message = message
+        )
+      )
+    }
+
+    if (!hasValidScheme) {
+      generateUrlError(UnprocessableUrlException.MissingHttpPrefix)
+    } else if (!hasValidDomain) {
+      generateUrlError(UnprocessableUrlException.InvalidDomain)
+    } else if (!sameDomain) {
+      generateUrlError(UnprocessableUrlException.NotSameOrigin)
+    } else if (isVisited) {
+      generateUrlError(UnprocessableUrlException.UrlAlreadyCrawled)
+    } else {
+      Success(true)
+    }
+  }
 }

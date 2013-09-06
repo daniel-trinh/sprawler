@@ -81,6 +81,20 @@ case class HttpCrawlerClient(uri: Uri) extends HttpClientPipelines {
   }
 
   /**
+   * Perform a GET request on an absolute URI.
+   * {{{
+   *   val client = HttpCrawlerClient("https://github.com")
+   *   client.get(Uri("http://github.com/some/path"))
+   *   => res1: Future[Try[HttpResponse]]
+   * }}}
+   * @param uri The request uri to GET.
+   * @return A future [[spray.http.HttpResponse]]
+   */
+  def get(uri: Uri): Future[Try[HttpResponse]] = {
+    throttledSendReceive(Get(uri))
+  }
+
+  /**
    * Similar to get, but allows for a custom pipeline for transforming the HttpRequest / HttpResponse
    * {{{
    *  val client = HttpCrawlerClient("https://github.com")

@@ -78,8 +78,13 @@ object CrawlerExceptions {
     message: String,
     errorType: String = "url_not_allowed") extends CrawlerException(message)
 
+  /**
+   * Constants describing the possible causes of an invalid url.
+   * I would totally use an ADT here but... strings are simpler.
+   */
   object UrlNotAllowedException {
     val RobotRuleDisallowed = "This domain's robot rules does not allow crawling of this url."
+
   }
 
   /**
@@ -101,6 +106,9 @@ object CrawlerExceptions {
 
   object UnprocessableUrlException {
     val MissingHttpPrefix = "Url must start with https:// or http://"
+    val UrlAlreadyCrawled = "Url has already been crawled."
+    val NotSameOrigin = "Url must originate from the same domain as the initial url."
+    val InvalidDomain = "The host / domain name of the url can't be parsed."
   }
 
   /**
