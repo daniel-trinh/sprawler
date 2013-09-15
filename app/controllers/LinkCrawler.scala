@@ -12,7 +12,7 @@ import scala.concurrent.duration._
 import akka.util.Timeout
 import play.api.libs.iteratee.{ Iteratee, Concurrent, Enumerator }
 import play.api.libs.EventSource
-import biz.crawler.Crawler
+import biz.crawler.CrawlerStarter
 
 object LinkCrawler extends Controller {
   /**
@@ -28,7 +28,7 @@ object LinkCrawler extends Controller {
     }.mapDone { event =>
       play.Logger.info(s"end: $event")
     }
-    val crawler = new Crawler(url)
+    val crawler = new CrawlerStarter(url)
     Future.successful(iteratee, crawler.jsStream)
   }
 
@@ -38,7 +38,7 @@ object LinkCrawler extends Controller {
    */
   def deadLinksSSE(url: String) = Action {
     // TODO: fix data race problem with actor starting crawling before enumerator is received
-    val crawler = new Crawler(url)
+    val crawler = new CrawlerStarter(url)
     Ok.stream(crawler.jsStream through EventSource() andThen Enumerator.eof).as("text/event-stream")
   }
 }

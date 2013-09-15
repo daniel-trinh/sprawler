@@ -3,7 +3,7 @@ import Keys._
 import com.typesafe.sbt.SbtScalariform
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 import com.tuplejump.sbt.yeoman.Yeoman
-
+import com.typesafe.sbt.SbtAtmos.{ Atmos, atmosSettings }
 
 object ApplicationBuild extends Build {
 
@@ -36,7 +36,9 @@ object ApplicationBuild extends Build {
 
   val main = play.Project(
     appName, appVersion, appDependencies
-  ).settings(
+  )
+  .configs(Atmos)
+  .settings(
     SbtScalariform.scalariformSettings ++
       (resolvers ++= appResolvers) ++
       (scalaVersion := scalacVersion) ++
@@ -46,7 +48,9 @@ object ApplicationBuild extends Build {
       // Set alternate conf file in test mode
       (javaOptions in Test += "-Dconfig.file=conf/test.conf") ++
       // Add yeoman commands to sbt 
-      Yeoman.yeomanSettings: _*
+      Yeoman.yeomanSettings ++
+      // Add akka tracing tool
+      atmosSettings: _*
   ) aggregate(async) dependsOn(async)
 
 
@@ -89,10 +93,11 @@ object Dependencies {
 
   // Misc
   val miscDeps = Seq(
-    "com.typesafe"                    %  "config"          % "1.0.0",
-    "com.github.nscala-time"          %% "nscala-time"     % "0.2.0"            
+    "com.typesafe"                    %  "config"           % "1.0.0",
+    "com.github.nscala-time"          %% "nscala-time"      % "0.2.0",
+    "com.typesafe.atmos"              %  "trace-akka-2.1.4" % "1.2.1"
   )
-  val Seq(typesafeConfig, nscalaTime) = miscDeps
+  val Seq(typesafeConfig, nscalaTime, akkaTrace) = miscDeps
 
   // Webcrawler related dependencies
   val crawlerDeps = Seq(
@@ -112,18 +117,20 @@ object Dependencies {
 
   // Spray
   val sprayDeps = Seq(
-    "io.spray" %  "spray-client" % V.SprayNightly,
-    "io.spray" %  "spray-can"    % V.SprayNightly,
-    "io.spray" %  "spray-http"   % V.SprayNightly,
-    "io.spray" %  "spray-httpx"  % V.SprayNightly,
-    "io.spray" %  "spray-util"   % V.SprayNightly
+    "io.spray" %  "spray-client"  % V.SprayNightly,
+    "io.spray" %  "spray-can"     % V.SprayNightly,
+    "io.spray" %  "spray-http"    % V.SprayNightly,
+    "io.spray" %  "spray-httpx"   % V.SprayNightly,
+    "io.spray" %  "spray-util"    % V.SprayNightly,
+    "io.spray" %  "spray-caching" % V.SprayNightly
   )
   val Seq(
     sprayClient,
     sprayCan,
     sprayHttp,
     sprayHttpx,
-    sprayUtil
+    sprayUtil,
+    sprayCaching
   ) = sprayDeps
 
   // Testing dependencies

@@ -10,3 +10,5 @@ addSbtPlugin("play" % "sbt-plugin" % "2.1.3")
 addSbtPlugin("com.typesafe.sbt" % "sbt-scalariform" % "1.0.1")
 
 addSbtPlugin("com.tuplejump" % "sbt-yeoman" % "0.5.2")
+
+addSbtPlugin("com.typesafe.sbt" % "sbt-atmos" % "0.2.3")

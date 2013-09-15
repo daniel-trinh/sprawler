@@ -10,7 +10,8 @@ import biz.crawler._
 import controllers.routes
 import biz.CrawlerExceptions.RedirectLimitReachedException
 import scala.util.Failure
-import play.core.StaticApplication
+import biz.crawler.url.{ CrawlerUrl, AbsoluteUrl }
+import biz.http.client.RedirectFollower
 
 // This spec should not be run by its own, instead it should be run indirectly through ServerDependentSpecs
 @DoNotDiscover
@@ -47,4 +48,4 @@ class RedirectFollowerSpec extends WordSpec with ShouldMatchers with BeforeAndAf
   }
 }
 
-case class DummyRedirector(crawlerUrl: CrawlerUrl) extends RedirectFollower
+case class DummyRedirector(originCrawlerUrl: CrawlerUrl) extends RedirectFollower

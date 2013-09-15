@@ -17,11 +17,11 @@ import scala.async.Async.{ async, await }
 import scala.concurrent.duration._
 import scala.util.{ Try, Success, Failure }
 import scala.{ Some, None }
+
 import spray.client.pipelining._
 import spray.http._
-
-import HttpMethods._
 import spray.http.HttpResponse
+
 import akka.contrib.throttle.Throttler.SetTarget
 import akka.contrib.throttle.Throttler.Rate
 import play.api.Logger
