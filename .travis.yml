@@ -3,4 +3,4 @@ scala:
   - "2.10.2"
 jdk:
   - oraclejdk7
-script: "sbt test-only biz.MasterSpecs"
+script: ./travis_build.sh
