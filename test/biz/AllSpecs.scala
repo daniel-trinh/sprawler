@@ -1,13 +1,5 @@
 package biz
 
-/**
- * Created with IntelliJ IDEA.
- * User: daniel
- * Date: 8/18/13
- * Time: 12:28 AM
- * To change this template use File | Settings | File Templates.
- */
-
 import org.scalatest._
 import play.core.StaticApplication
 
@@ -16,7 +8,7 @@ import play.core.StaticApplication
  * TODO: split this into ServerDependentSpecs when sbt 0.13 is out,
  * and @DoNotDiscover annotation works with ~ test-only.
  */
-class MasterSpecs extends Specs(
+class AllSpecs extends Specs(
   new HttpCrawlerClientSpec,
   new RedirectFollowerSpec,
   new RobotRulesSpec,

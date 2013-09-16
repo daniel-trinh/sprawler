@@ -4,6 +4,7 @@ import akka.agent._
 import akka.actor._
 
 import biz.crawler.url.{ AbsoluteUrl, CrawlerUrl }
+import biz.crawler.actor.WorkPullingPattern._
 
 import play.api.libs.json._
 import play.api.libs.iteratee._
@@ -72,8 +73,10 @@ class CrawlerStarter(url: String) extends Streams {
 
     tryCrawlerUrl match {
       case Success(crawlerUrl) => {
+
         // TODO: replace this with a router for several parallel crawlers
         val masterActor = Akka.system.actorOf(Props(new Master[CrawlerUrl]()))
+        masterActor ! AddOneToQueue(crawlerUrl)
         val crawlerActor = Akka.system.actorOf(Props(new LinkScraperActor(masterActor, crawlerUrl, channel)))
 
         crawlerUrl.domain match {
@@ -94,5 +97,3 @@ class CrawlerStarter(url: String) extends Streams {
 }
 
 case class Links(links: List[String])
-
-//case class CrawlerUrl(fromUri: String, url: Uri)

@@ -15,3 +15,7 @@
 
 + So yea.. don't shut down Akka.system or restart it, the code for throttling HTTP requests
   relies on it being up, since the throttling mechanism uses akka actors.
+
+
+### Build Status
+[![Build Status](https://travis-ci.org/daniel-trinh/webcrawler.png?branch=wip)](https://travis-ci.org/daniel-trinh/webcrawler)

@@ -102,10 +102,10 @@ object Dependencies {
   // Webcrawler related dependencies
   val crawlerDeps = Seq(
     "com.google.code.crawler-commons" % "crawler-commons"  % "0.2",
-    "com.google.guava"                % "guava"            % "r09",
     "org.jsoup"                       % "jsoup"            % "1.7.2"
+    // "com.google.guava"                % "guava"            % "r09",
   )
-  val Seq(crawlerCommons, guava, jsoup) = crawlerDeps
+  val Seq(crawlerCommons, jsoup) = crawlerDeps
 
   // Akka
   val akkaDeps = Seq(
