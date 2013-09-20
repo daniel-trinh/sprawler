@@ -23,7 +23,6 @@ import play.libs.Akka
 trait HttpClientPipelines extends Throttler {
 
   private implicit val system = Akka.system
-  val sendReceiver = sendReceive
 
   /**
    * Base url of the website being crawled.
@@ -34,7 +33,7 @@ trait HttpClientPipelines extends Throttler {
    */
   def domain: String
 
-  def robotRules: Future[Try[BaseRobotRules]]
+  def robotRules: Future[BaseRobotRules]
 
   /**
    * [[spray.can.client]] pipeline. Will only return the body of the response. Can throw a
@@ -52,7 +51,7 @@ trait HttpClientPipelines extends Throttler {
    * sendReceive
    */
   val fetchRobotRules = {
-    sendReceiveTry ~>
+    sendReceiver ~>
       parseRobotRules
   }
 
@@ -62,13 +61,13 @@ trait HttpClientPipelines extends Throttler {
    * @throws FailedHttpRequestException This is thrown if the HttpResponse is not a 1xx, 2xx, or 3xx status response.
    * @return future'd parsed response body
    */
-  def parseBody(response: Future[Try[HttpResponse]]): Future[Try[String]] = {
-    response map { res =>
-      res map { r =>
-        if (r.status.isSuccess) {
-          r.entity.asString
-        } else
-          throw new FailedHttpRequestException(r.status.intValue, r.status.reason, r.status.defaultMessage)
+  def parseBody(response: Future[HttpResponse]): Future[String] = {
+    async {
+      val res = await(response)
+      if (res.status.isSuccess) {
+        res.entity.asString
+      } else {
+        await(Future.failed[String](FailedHttpRequestException(res.status.intValue, res.status.reason, res.status.defaultMessage)))
       }
     }
   }
@@ -77,26 +76,18 @@ trait HttpClientPipelines extends Throttler {
    * Intended to be a throttled drop in replacement for [[spray.client]].sendReceive
    * @return A function that receives a [[spray.http.HttpRequest]] and returns a future'd try'd [[spray.http.HttpResponse]].
    */
-  def throttledSendReceive: HttpRequest => Future[Try[HttpResponse]] = {
+  def throttledSendReceive: HttpRequest => Future[HttpResponse] = {
     request =>
       {
         async {
           // Send a dummy object to throttler, and wait for an "ok" back from the throttler
           // to perform an action
-          val tryRules = await(robotRules)
+          val rules = await(robotRules)
           play.Logger.debug(s"uri.scheme!!!:${request.uri.scheme}")
           play.Logger.debug(s"uri.authority!!!:${request.uri.authority}")
           val url = request.uri.toString()
-
           // Check to make sure doing a request on this URL is allowed (based on the domain's robot rules)
-          val asdf = tryRules match {
-            case Success(rules) =>
-              checkAndThrottleRequest(rules.isAllowed(url), request)
-            case Failure(throwable) =>
-              // TODO: is there a better way of doing this? looks like unnecessary boxing
-              Future(Failure(throwable))
-          }
-          await(asdf)
+          await(checkAndThrottleRequest(rules.isAllowed(url), request))
         }
       }
   }
@@ -106,11 +97,10 @@ trait HttpClientPipelines extends Throttler {
    * @param robotsTxtBody The contents of domain's robots.txt file
    * @return A future [[crawlercommons.robots.BaseRobotRules]]
    */
-  def parseRobotRules(robotsTxtBody: Future[Try[HttpResponse]]): Future[Try[BaseRobotRules]] = {
+  def parseRobotRules(robotsTxtBody: Future[HttpResponse]): Future[BaseRobotRules] = {
     async {
-      await(robotsTxtBody) map { response =>
-        RobotRules.create(domain, SprayCanConfig.Client.userAgent, response.entity.asString)
-      }
+      val response = await(robotsTxtBody)
+      RobotRules.create(domain, SprayCanConfig.Client.userAgent, response.entity.asString)
     }
   }
 
@@ -118,37 +108,33 @@ trait HttpClientPipelines extends Throttler {
    * Same as [[spray.client]].sendReceive, except the HttpResponse is wrapped in a Try.
    * @return Future'd try'd http response
    */
-  def sendReceiveTry: HttpRequest => Future[Try[HttpResponse]] = {
-    request =>
-      {
-        val futureResponse = sendReceiver(request)
-        futureResponse.tryMe
-      }
+  def sendReceiver: HttpRequest => Future[HttpResponse] = {
+    sendReceive
   }
 
   /**
    * Checks if a HttpRequest can be crawled, and queues the request to be crawled in a throttler.
    * @param urlIsAllowed True if the url can be crawled, false otherwise
    * @param request The [[spray.http.HttpRequest]] to check for crawlability
-   * @return Future'd Try'd [[spray.http.HttpResponse]].
-   *         The Try contains a [[biz.CrawlerExceptions.UrlNotAllowedException]] if the url is
+   * @return Future'd [[spray.http.HttpResponse]].
+   *         The Future contains a [[biz.CrawlerExceptions.UrlNotAllowedException]] if the url is
    *         not crawlable.
    */
-  private def checkAndThrottleRequest(urlIsAllowed: Boolean, request: HttpRequest): Future[Try[HttpResponse]] = {
+  private def checkAndThrottleRequest(urlIsAllowed: Boolean, request: HttpRequest): Future[HttpResponse] = {
     async {
       if (urlIsAllowed) {
         val p = Promise[Boolean]()
         await(throttler) ! PromiseRequest(p)
         await(p.future)
-        val result = await(sendReceiveTry(request))
+        val result = await(sendReceiver(request))
         result
       } else {
-        Failure(
+        await(Future.failed[HttpResponse](
           UrlNotAllowedException(
             host = domain,
             path = request.uri.path.toString(),
             message = UrlNotAllowedException.RobotRuleDisallowed)
-        )
+        ))
       }
     }
   }

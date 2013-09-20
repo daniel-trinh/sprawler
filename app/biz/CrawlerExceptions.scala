@@ -109,6 +109,7 @@ object CrawlerExceptions {
     val UrlAlreadyCrawled = "Url has already been crawled."
     val NotSameOrigin = "Url must originate from the same domain as the initial url."
     val InvalidDomain = "The host / domain name of the url can't be parsed."
+    val MaxDepthReached = "The Crawler's max URL depth has been reached."
   }
 
   /**

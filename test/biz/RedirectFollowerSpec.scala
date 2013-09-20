@@ -1,17 +1,21 @@
 package biz
 
+import biz.CrawlerExceptions.RedirectLimitReachedException
+import biz.SpecHelper.DummyChannel
+import biz.crawler._
+import biz.crawler.url.{ CrawlerUrl, AbsoluteUrl }
+import biz.http.client.RedirectFollower
+
+import controllers.routes
+
 import org.scalatest._
+
+import play.api.libs.json.JsValue
+
 import scala.collection.mutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import biz.SpecHelper.DummyChannel
-import play.api.libs.json.JsValue
-import biz.crawler._
-import controllers.routes
-import biz.CrawlerExceptions.RedirectLimitReachedException
-import scala.util.Failure
-import biz.crawler.url.{ CrawlerUrl, AbsoluteUrl }
-import biz.http.client.RedirectFollower
+import scala.util.{ Try, Success, Failure }
 
 // This spec should not be run by its own, instead it should be run indirectly through ServerDependentSpecs
 @DoNotDiscover
@@ -25,7 +29,7 @@ class RedirectFollowerSpec extends WordSpec with ShouldMatchers with BeforeAndAf
 
         localHttpTest { client =>
           val request = client.get(routes.TestDummy.infiniteRedirect().url)
-          val result = Await.result(redirector.followRedirects(redirectUrl, request), 10.seconds)
+          val result = Try(Await.result(redirector.followRedirects(redirectUrl, request), 20.seconds))
           result.isFailure should be === true
           result should be === Failure(RedirectLimitReachedException(redirectUrl.fromUri.toString(), redirectUrl.uri.toString()))
         }
@@ -38,10 +42,7 @@ class RedirectFollowerSpec extends WordSpec with ShouldMatchers with BeforeAndAf
         localHttpTest { client =>
           val request = client.get(routes.TestDummy.redirect().url)
           val result = Await.result(redirector.followRedirects(redirectUrl, request), 5.seconds)
-          result.isFailure should be === false
-          result.map { response =>
-            response.status.intValue should be === 200
-          }
+          result.status.intValue should be === 200
         }
       }
     }

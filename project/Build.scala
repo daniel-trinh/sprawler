@@ -94,7 +94,7 @@ object Dependencies {
   // Misc
   val miscDeps = Seq(
     "com.typesafe"                    %  "config"           % "1.0.0",
-    "com.github.nscala-time"          %% "nscala-time"      % "0.2.0",
+    "com.github.nscala-time"          %% "nscala-time"      % "0.6.0",
     "com.typesafe.atmos"              %  "trace-akka-2.1.4" % "1.2.1"
   )
   val Seq(typesafeConfig, nscalaTime, akkaTrace) = miscDeps

@@ -36,7 +36,7 @@ sealed abstract class CrawlerUrl extends CheckUrlCrawlability {
    * When a url gets created and reaches 0, the crawler stops crawling. This is to prevent the crawler
    * from running indefinitely. Set to a negative number to allow for infinite crawling.
    */
-  def depth: Int = CrawlerConfig.maxDepth
+  def depth: Int
 
   /**
    * TODO: remove this? where is it used?
@@ -70,4 +70,4 @@ sealed trait AbsoluteCrawlerUrl extends CrawlerUrl {
   }
 }
 
-case class AbsoluteUrl(fromUri: Uri, uri: Uri) extends AbsoluteCrawlerUrl
+case class AbsoluteUrl(fromUri: Uri, uri: Uri, depth: Int = CrawlerConfig.maxDepth) extends AbsoluteCrawlerUrl

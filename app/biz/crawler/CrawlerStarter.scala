@@ -76,7 +76,7 @@ class CrawlerStarter(url: String) extends Streams {
 
         // TODO: replace this with a router for several parallel crawlers
         val masterActor = Akka.system.actorOf(Props(new Master[CrawlerUrl]()))
-        masterActor ! AddOneToQueue(crawlerUrl)
+        masterActor ! Work(crawlerUrl)
         val crawlerActor = Akka.system.actorOf(Props(new LinkScraperActor(masterActor, crawlerUrl, channel)))
 
         crawlerUrl.domain match {

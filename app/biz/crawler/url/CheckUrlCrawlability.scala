@@ -77,6 +77,8 @@ trait CheckUrlCrawlability { this: CrawlerUrl =>
       generateUrlError(UnprocessableUrlException.MissingHttpPrefix)
     } else if (!hasValidDomain) {
       generateUrlError(UnprocessableUrlException.InvalidDomain)
+    } else if (!isWithinDepth) {
+      generateUrlError(UnprocessableUrlException.MaxDepthReached)
     } else if (!sameDomain) {
       generateUrlError(UnprocessableUrlException.NotSameOrigin)
     } else if (isVisited) {

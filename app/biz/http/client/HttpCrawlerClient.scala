@@ -47,9 +47,9 @@ case class HttpCrawlerClient(uri: Uri) extends HttpClientPipelines {
    * Useful for debugging the response body of an HttpResponse
    * @param response
    */
-  def printResponse(response: Future[Try[HttpResponse]]) {
+  def printResponse(response: Future[HttpResponse]) {
     async {
-      println(await(response).map(res => res.entity.asString))
+      println(await(response).entity.asString)
     }
   }
 
@@ -58,7 +58,7 @@ case class HttpCrawlerClient(uri: Uri) extends HttpClientPipelines {
    * @param paths A traversable of relative paths to query
    * @return A future [[scala.collection.Traversable]] of [[spray.http.HttpResponse]]
    */
-  def parallelGet(paths: TraversableOnce[String]): Future[TraversableOnce[Try[HttpResponse]]] = {
+  def parallelGet(paths: TraversableOnce[String]): Future[TraversableOnce[HttpResponse]] = {
     Future.traverse(paths) { path =>
       get(path)
     }
@@ -69,14 +69,14 @@ case class HttpCrawlerClient(uri: Uri) extends HttpClientPipelines {
    * {{{
    *   val client = HttpCrawlerClient("https://github.com")
    *   client.get("/")
-   *   => res1: Future[Try[HttpResponse]]
+   *   => res1: Future[HttpResponse]
    *   HttpCrawlerClient(http://www.yahoo.com).get("/")
-   *   => res2: Future[Try[HttpResponse]]
+   *   => res2: Future[HttpResponse]
    * }}}
    * @param path The path relative to domain to GET.
    * @return A future [[spray.http.HttpResponse]]
    */
-  def get(path: String): Future[Try[HttpResponse]] = {
+  def get(path: String): Future[HttpResponse] = {
     throttledSendReceive(Get(domain + path))
   }
 
@@ -85,12 +85,12 @@ case class HttpCrawlerClient(uri: Uri) extends HttpClientPipelines {
    * {{{
    *   val client = HttpCrawlerClient("https://github.com")
    *   client.get(Uri("http://github.com/some/path"))
-   *   => res1: Future[Try[HttpResponse]]
+   *   => res1: Future[HttpResponse]
    * }}}
    * @param uri The request uri to GET.
    * @return A future [[spray.http.HttpResponse]]
    */
-  def get(uri: Uri): Future[Try[HttpResponse]] = {
+  def get(uri: Uri): Future[HttpResponse] = {
     throttledSendReceive(Get(uri))
   }
 
@@ -112,7 +112,7 @@ case class HttpCrawlerClient(uri: Uri) extends HttpClientPipelines {
   /**
    * Retrieves the [[crawlercommons.robots.BaseRobotRules]] from this [[biz.http.client.HttpCrawlerClient]]'s domain.
    */
-  val robotRules: Future[Try[BaseRobotRules]] = {
+  val robotRules: Future[BaseRobotRules] = {
     fetchRules
   }
 
@@ -121,17 +121,18 @@ case class HttpCrawlerClient(uri: Uri) extends HttpClientPipelines {
    * is the crawl-delay parsed from the domain's robots.txt file, or
    */
   val crawlDelayRate: Future[Rate] = {
-    async {
-      await(robotRules) match {
-        case Success(rules) =>
-          val delay = rules.getCrawlDelay
-          Logger.debug(s"delay:$delay")
-          1 msgsPer delay.milliseconds
-        case Failure(exception) =>
-          // TODO: should this just throw the exception instead? at the very least, needs to log
-          1 msgsPer CrawlerConfig.defaultCrawlDelay.milliseconds
-      }
+    val attemptRate = async {
+      val rules = await(robotRules)
+      val delay = rules.getCrawlDelay
+      Logger.debug(s"delay:$delay")
+      1 msgsPer delay.milliseconds
     }
+
+    attemptRate.recoverWith {
+      case e: RuntimeException =>
+        Future.successful(1 msgsPer CrawlerConfig.defaultCrawlDelay.milliseconds)
+    }
+
   }
 
   /**
@@ -139,15 +140,13 @@ case class HttpCrawlerClient(uri: Uri) extends HttpClientPipelines {
    * @param response A successful response which contains valid html to parse
    * @return a future list of anchor links from the html in [[spray.http.HttpResponse]]
    */
-  def parseLinks(response: Future[Try[HttpResponse]]): Future[Try[List[String]]] = {
+  def parseLinks(response: Future[HttpResponse]): Future[List[String]] = {
     async {
-      for (res <- await(response)) yield {
-        XmlParser.extractLinks(res.entity.asString)
-      }
+      XmlParser.extractLinks(await(response).entity.asString)
     }
   }
 
-  private def fetchRules: Future[Try[BaseRobotRules]] = {
+  private def fetchRules: Future[BaseRobotRules] = {
     val request = Get(domain+"/robots.txt")
     fetchRobotRules(request)
   }

@@ -35,27 +35,17 @@ class HttpCrawlerClientSpec
       "fetch a simple https:// url" in {
         val request = HttpCrawlerClient(Uri("https://www.google.com")).get("/")
         val res = Await.result(request, 5.seconds)
-
-        res.isSuccess should be === true
-
-        res map { response =>
-          response.status.value should be === 200
-        }
+        res.status.value should be === "200 OK"
       }
       "fetch a simple http:// url" in {
         val client = HttpCrawlerClient("http://www.yahoo.com")
         val request = client.get("/robots.txt")
-        val res = Await.result(request, 5.seconds)
-
-        res.isSuccess should be === true
-
-        res map { response =>
-          response.status.value should be === 200
-        }
+        val response = Await.result(request, 5.seconds)
+        response.status.value should be === "200 OK"
       }
       "fail on fetching a site that disallows crawling" in {
         val request = HttpCrawlerClient("https://github.com").get("/")
-        val res = Await.result(request, 5.seconds)
+        val res = Try(Await.result(request, 5.seconds))
 
         res.isFailure should be === true
 
@@ -76,7 +66,8 @@ class HttpCrawlerClientSpec
             """.stripMargin)
 
           //          Add extra slight delay to allow timeout failure to be returned
-          val result = Await.result(request, (timeout * (retries + 2)).seconds)
+          val result = Try(Await.result(request, (timeout * (retries + 2)).seconds))
+
           result.isFailure should be === true
           result match {
             case p @ Failure(x) =>
@@ -113,10 +104,7 @@ class HttpCrawlerClientSpec
           val results = Await.result(requests, CrawlerConfig.defaultCrawlDelay.milliseconds * 2)
 
           results.foreach { res =>
-            res.isSuccess should be === true
-            res foreach { res =>
-              res.status.isSuccess should be === true
-            }
+            res.status.isSuccess should be === true
           }
         }
       }
@@ -131,20 +119,14 @@ class HttpCrawlerClientSpec
           val request = client.get("/test/redirect")
           println(client)
           val result = Await.result(request, 5.seconds)
-          result map { res =>
-            res.status.value should be === 200
-          }
+          result.status.value should be === "301 Moved Permanently"
         }
       }
       "handle 500s" in {
         localHttpTest { client =>
           val request = client.get("/test/internalError")
           val result = Await.result(request, 5.seconds)
-
-          result.isFailure should be === false
-          result foreach { res =>
-            res.status.value should be === "500 Internal Server Error"
-          }
+          result.status.value should be === "500 Internal Server Error"
         }
       }
     }
@@ -155,8 +137,7 @@ class HttpCrawlerClientSpec
         localHttpTest { client =>
           val request = client.get("/", client.bodyOnlyPipeline)
           val res = Await.result(request, 5.seconds)
-
-          res.isFailure should be === false
+          res should not be " "
         }
       }
     }
@@ -165,22 +146,16 @@ class HttpCrawlerClientSpec
       "properly fetch a site with robots.txt" in {
         localHttpTest { client =>
           val request = client.robotRules
-          val tryRules = Await.result(request, 5.seconds)
-          tryRules.isSuccess should be === true
-          tryRules map { rules =>
-            rules.getCrawlDelay should be === 1 * 1000
-          }
+          val rules = Await.result(request, 5.seconds)
+          rules.getCrawlDelay should be === 1 * 1000
         }
       }
       "gracefully fail when trying to fetch a site without robots.txt" in {
         localHttpTest { client =>
           val request = client.get("/fakepath/robots.txt", client.fetchRobotRules)
-          val tryRules = Await.result(request, 5.seconds)
-          tryRules.isSuccess should be === true
-          tryRules map { rules =>
-            rules.getCrawlDelay should be === CrawlerConfig.defaultCrawlDelay
-            rules.isAllowAll should be === true
-          }
+          val rules = Await.result(request, 5.seconds)
+          rules.getCrawlDelay should be === CrawlerConfig.defaultCrawlDelay
+          rules.isAllowAll should be === true
         }
       }
     }
