@@ -71,7 +71,7 @@ class HttpCrawlerClientSpec
           result.isFailure should be === true
           result match {
             case p @ Failure(x) =>
-              x.toString should be === "java.lang.RuntimeException: Request timeout"
+              x.toString should be === "spray.can.Http$RequestTimeoutException: GET request to /test/timeout timed out"
           }
         }
       }

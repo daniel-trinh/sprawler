@@ -29,6 +29,4 @@ class LinkQueueMaster[CrawlerUrl] extends Master {
       self ! PoisonPill
     }
   }
-
-  // Since there is no work, start timer to shut down actors
 }

@@ -7,7 +7,6 @@ import biz.crawler.url.CrawlerUrl
 import biz.http.client.RedirectFollower
 
 import play.api.libs.iteratee.Concurrent
-import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.json.{ JsString, JsObject, Json, JsValue }
 
 import akka.actor.{ ActorRef, Actor }
@@ -26,7 +25,7 @@ import biz.crawler.Streams
  * @param originCrawlerUrl The original URL that started this crawling session
  * @param channel Channel for pushing results into
  */
-class LinkScraperActor(master: ActorRef, val originCrawlerUrl: CrawlerUrl, val channel: Concurrent.Channel[JsValue])
+class LinkScraperWorker(master: ActorRef, val originCrawlerUrl: CrawlerUrl, val channel: Concurrent.Channel[JsValue])
     extends Worker[CrawlerUrl](master)
     with Streams
     with RedirectFollower {
@@ -52,7 +51,6 @@ class LinkScraperActor(master: ActorRef, val originCrawlerUrl: CrawlerUrl, val c
     futureWork.onComplete { _ =>
       master ! WorkItemDone
     }
-
-    Future(Unit)
+    futureWork
   }
 }

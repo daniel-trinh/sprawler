@@ -33,7 +33,7 @@ trait HttpClientPipelines extends Throttler {
    */
   def domain: String
 
-  def robotRules: Future[BaseRobotRules]
+  val robotRules: Future[BaseRobotRules]
 
   /**
    * [[spray.can.client]] pipeline. Will only return the body of the response. Can throw a
@@ -83,9 +83,8 @@ trait HttpClientPipelines extends Throttler {
           // Send a dummy object to throttler, and wait for an "ok" back from the throttler
           // to perform an action
           val rules = await(robotRules)
-          play.Logger.debug(s"uri.scheme!!!:${request.uri.scheme}")
-          play.Logger.debug(s"uri.authority!!!:${request.uri.authority}")
           val url = request.uri.toString()
+
           // Check to make sure doing a request on this URL is allowed (based on the domain's robot rules)
           await(checkAndThrottleRequest(rules.isAllowed(url), request))
         }

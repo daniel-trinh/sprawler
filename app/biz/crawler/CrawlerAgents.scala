@@ -5,7 +5,7 @@ import akka.agent.Agent
 import biz.http.client.HttpCrawlerClient
 
 import play.Logger
-import play.libs.Akka
+import play.api.libs.concurrent.Execution.Implicits._
 
 import scala.collection.mutable
 
@@ -20,12 +20,12 @@ object CrawlerAgents {
   /**
    * Stores all visited urls across this Crawler session's lifetime.
    */
-  val visitedUrls = Agent(new mutable.HashSet[String]())(Akka.system)
+  val visitedUrls = Agent(new mutable.HashSet[String]())
 
   /**
    * Lookup table for robots.txt rules for a particular url
    */
-  val crawlerClients = Agent(new mutable.HashMap[String, HttpCrawlerClient])(Akka.system)
+  val crawlerClients = Agent(new mutable.HashMap[String, HttpCrawlerClient])
 
   /**
    *
@@ -50,10 +50,5 @@ object CrawlerAgents {
         }
         httpClient
     }
-  }
-
-  def closeAgents() {
-    visitedUrls.close()
-    crawlerClients.close()
   }
 }

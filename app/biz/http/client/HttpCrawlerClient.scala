@@ -148,6 +148,7 @@ case class HttpCrawlerClient(uri: Uri) extends HttpClientPipelines {
 
   private def fetchRules: Future[BaseRobotRules] = {
     val request = Get(domain+"/robots.txt")
+    play.Logger.debug(s"robot rules being fetched: $request")
     fetchRobotRules(request)
   }
 }
@@ -198,6 +199,7 @@ trait Throttler {
      */
     def receive = {
       case PromiseRequest(promise) => {
+        play.Logger.debug(s"Message Received: Time: ${DateTime.now}")
         promise success true
       }
     }
@@ -211,6 +213,8 @@ trait Throttler {
     val delayRate = await(crawlDelayRate)
     play.Logger.debug(s"crawlDelayRate:$delayRate")
     val throttle = Akka.system.actorOf(Props(new TimerBasedThrottler(delayRate)))
+
+    play.Logger.debug(s"Message Sent: Time: ${DateTime.now}")
     throttle ! SetTarget(Some(forwarder))
     throttle
   }

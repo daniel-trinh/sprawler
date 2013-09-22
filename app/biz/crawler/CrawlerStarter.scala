@@ -18,7 +18,7 @@ import scala.async.Async.{ async, await }
 import scala.util.{ Try, Success, Failure }
 
 import spray.http.{ Uri, HttpResponse }
-import biz.crawler.actor.{ Master, LinkScraperActor }
+import biz.crawler.actor.{ Master, LinkScraperWorker }
 
 // url not crawlable due to robots
 // timeout
@@ -62,7 +62,7 @@ class CrawlerStarter(url: String) extends Streams {
   /**
    * Startup function to be called when the crawler Enumerator feed starts being consumed by an
    * Iteratee. Initiates the crawling process by sending a [[biz.crawler.url.CrawlerUrl]] message to a
-   * [[biz.crawler.actor.LinkScraperActor]].
+   * [[biz.crawler.actor.LinkScraperWorker]].
    *
    * Can only be called after channel is defined, otherwise a NPE is going to happen.
    *
@@ -77,7 +77,7 @@ class CrawlerStarter(url: String) extends Streams {
         // TODO: replace this with a router for several parallel crawlers
         val masterActor = Akka.system.actorOf(Props(new Master[CrawlerUrl]()))
         masterActor ! Work(crawlerUrl)
-        val crawlerActor = Akka.system.actorOf(Props(new LinkScraperActor(masterActor, crawlerUrl, channel)))
+        val crawlerActor = Akka.system.actorOf(Props(new LinkScraperWorker(masterActor, crawlerUrl, channel)))
 
         crawlerUrl.domain match {
           case Success(d) =>

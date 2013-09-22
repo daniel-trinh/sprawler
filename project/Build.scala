@@ -4,6 +4,8 @@ import com.typesafe.sbt.SbtScalariform
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 import com.tuplejump.sbt.yeoman.Yeoman
 import com.typesafe.sbt.SbtAtmos.{ Atmos, atmosSettings }
+import ProguardPlugin._
+
 
 object ApplicationBuild extends Build {
 
@@ -14,9 +16,11 @@ object ApplicationBuild extends Build {
   val appVersion      = "0.1.0"
 
   val scalacVersion = "2.10.2"
+  
   val appDependencies = sprayDeps ++ akkaDeps ++ miscDeps ++ testDeps ++ crawlerDeps ++ Seq(
     "org.scala-lang" % "scala-compiler" % scalacVersion
   )
+  
   val appResolvers = Seq(
     jboss,
     scalaTools,
@@ -26,13 +30,16 @@ object ApplicationBuild extends Build {
     sonatype
   )
 
+  lazy val proguard = proguardSettings ++ Seq(
+    proguardOptions := Seq(keepMain("Test"))
+  )
+
   val scalacSettings = Seq("-Dscalac.patmat.analysisBudget=off", "-feature")
 
   lazy val async = Project(
     id   = "async",
     base = file("../webcrawler/async")
   )
-
 
   val main = play.Project(
     appName, appVersion, appDependencies
@@ -50,7 +57,8 @@ object ApplicationBuild extends Build {
       // Add yeoman commands to sbt 
       Yeoman.yeomanSettings ++
       // Add akka tracing tool
-      atmosSettings: _*
+      atmosSettings ++
+      proguard: _*
   ) aggregate(async) dependsOn(async)
 
 
@@ -87,9 +95,12 @@ object Dependencies {
 
   object V {
     val Spray = "1.1-M8"
-    val SprayNightly = "1.1-20130801"
-    val Akka  = "2.1.4"
+    // val Akka  = "2.1.4"
+    val Akka  = "2.2.1"
+    // val SprayNightly = "1.1-20130801"
+    val SprayNightly = "1.2-20130912"
   }
+
 
   // Misc
   val miscDeps = Seq(
