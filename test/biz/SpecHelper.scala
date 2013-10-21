@@ -43,10 +43,12 @@ trait SpecHelper {
 
   private def executeWithinClient[T](f: HttpCrawlerClient => T, port: Int = SpecHelper.port): T = {
     val uri = Uri(s"http://localhost:$port")
-    val client = CrawlerAgents.getClient(
+    val client = CrawlerAgents.retrieveClient(
       uri = uri
     )
-    f(client)
+    // This would normally be bad code because of the blocking Await, but this is only supposed
+    // to be used for specs.
+    f(Await.result(client, 5 seconds))
   }
 
   private def printUri(uri: Uri) {

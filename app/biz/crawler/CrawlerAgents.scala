@@ -11,6 +11,10 @@ import scala.collection.mutable
 
 import spray.http.Uri
 
+import scala.concurrent.Future
+import spray.caching.{ LruCache, Cache }
+import spray.util._
+
 /**
  * Things that need to be shared across the crawler's session
  * TODO: move visited urls into Redis
@@ -25,30 +29,18 @@ object CrawlerAgents {
   /**
    * Lookup table for robots.txt rules for a particular url
    */
-  val crawlerClients = Agent(new mutable.HashMap[String, HttpCrawlerClient])
+  val crawlerClientCache: Cache[HttpCrawlerClient] = LruCache()
 
   /**
    *
    * @param uri This is the URI of the URL that you want to crawl next, and not the URI of an already
    *            crawled URL.
-   * @param portOverride This is used for unit tests.
    * @return
    */
-  def getClient(uri: Uri, portOverride: Option[Int] = None): HttpCrawlerClient = {
-    val urlKey = s"${uri.scheme}${uri.authority.host}"
-
-    crawlerClients().get(urlKey) match {
-      case Some(client) =>
-        client
-      case None =>
-        val httpClient = HttpCrawlerClient(uri)
-        Logger.debug(s"httpClientUri:$uri")
-        crawlerClients send { s =>
-          // avoid updating the hashtable if another client has already been added asynchronously
-          s.getOrElseUpdate(urlKey, httpClient)
-          s
-        }
-        httpClient
+  def retrieveClient(uri: Uri): Future[HttpCrawlerClient] = {
+    crawlerClientCache(uri.authority.host) {
+      Future.successful(HttpCrawlerClient(uri))
     }
   }
+
 }

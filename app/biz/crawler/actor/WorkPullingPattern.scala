@@ -33,11 +33,11 @@ object WorkPullingPattern {
   case object WorkItemDone extends Message
 
   /**
-   * Sent from Worker to Master
-   * Used to add a new worker actor
-   * TODO: replace this with a router
+   * Sent to Master, from wherever the workers Router is defined / accessible.
+   * Used to register with Master, so Master can shut down workers when there
+   * is no work left.
    *
-   * @param worker Actor to register with Master
+   * @param workers The [[biz.crawler.actor.Worker]] Router instance.
    */
-  case class RegisterWorker(worker: ActorRef) extends Message
+  case class RegisterWorkers(workers: ActorRef) extends Message
 }

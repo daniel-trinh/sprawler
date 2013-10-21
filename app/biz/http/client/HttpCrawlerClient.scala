@@ -135,17 +135,6 @@ case class HttpCrawlerClient(uri: Uri) extends HttpClientPipelines {
 
   }
 
-  /**
-   * Retrieves the "a href" html links from the [[spray.http.HttpResponse]]
-   * @param response A successful response which contains valid html to parse
-   * @return a future list of anchor links from the html in [[spray.http.HttpResponse]]
-   */
-  def parseLinks(response: Future[HttpResponse]): Future[List[String]] = {
-    async {
-      XmlParser.extractLinks(await(response).entity.asString)
-    }
-  }
-
   private def fetchRules: Future[BaseRobotRules] = {
     val request = Get(domain+"/robots.txt")
     play.Logger.debug(s"robot rules being fetched: $request")

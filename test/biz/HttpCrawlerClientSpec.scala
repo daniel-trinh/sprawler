@@ -2,8 +2,11 @@ package biz
 
 import biz.config.CrawlerConfig
 import biz.CrawlerExceptions._
+import biz.http.client.HttpCrawlerClient
+
 import org.scalatest._
 import org.scalatest.matchers.ShouldMatchers
+
 import play.api.test.Helpers._
 import play.api.test.{ WithApplication, TestServer }
 import play.core.StaticApplication
@@ -11,14 +14,16 @@ import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.concurrent.Akka
 import play.api.Play.current
 import play.api.libs.ws.WS
+import play.api.Logger
+
 import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
 import scala.util.{ Try, Failure, Success }
+
 import spray.can.client.HostConnectorSettings
 import spray.can.client.ClientConnectionSettings
-import biz.http.client.HttpCrawlerClient
+
 import spray.http.Uri
-import play.api.Logger
 
 // This spec should not be run by its own, instead it should be run indirectly through ServerDependentSpecs
 @DoNotDiscover

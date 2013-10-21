@@ -2,15 +2,11 @@ package biz.crawler
 
 import biz.CrawlerExceptions._
 import biz.CrawlerExceptions.JsonImplicits._
+
 import play.api.libs.iteratee.Concurrent
 import play.api.libs.json._
+
 import spray.http.HttpResponse
-import biz.CrawlerExceptions.FailedHttpRequestException
-import spray.http.HttpResponse
-import biz.CrawlerExceptions.UnknownException
-import play.api.libs.json.JsObject
-import play.api.libs.json.JsString
-import play.api.libs.json.JsNumber
 
 /**
  * For pushing JSON results and exceptions into a [[play.api.libs.iteratee.Concurrent.Channel]].

@@ -1,23 +1,62 @@
 package biz.crawler.actor
 
-import akka.actor.{ ActorSystem, ActorRef, Actor, Terminated }
+import akka.actor.{ ActorSystem, ActorRef, Actor, Terminated, Props }
+import akka.routing._
 
 import biz.crawler.actor.WorkPullingPattern._
-import biz.concurrency.FutureActions._
-import biz.config.CrawlerConfig
 
 import scala.collection.mutable
-import scala.concurrent.duration._
-import scala.concurrent.duration.FiniteDuration
 
 import play.api.libs.concurrent.Akka
 import play.api.libs.concurrent.Execution.Implicits._
+import biz.crawler.actor.WorkPullingPattern.Work
+import akka.actor.Terminated
+import scala.Some
+import akka.routing.Broadcast
+import scala.concurrent.{ Future, Promise }
 
-// If the queue is empty for more than the time it takes for a http request to time out * the # of retries,
-// the crawler has probably been completed, so it should be ok to shut down the master actor and workers.
-class Master[T] extends Actor {
+/**
+ * A 'master' actor that stores a work items of type T in [[biz.crawler.actor.Master.workQueue]],
+ * and handles orchestration of work between itself and it's [[biz.crawler.actor.Worker]]s.
+ *
+ * A general workflow might look something like this:
+ * 1) Master starts up, creates a set of Workers (using a resizable [[akka.routing.Router]]
+ *    as the worker pool).
+ * 2) Master receives a [[biz.crawler.actor.WorkPullingPattern.Work]] message,
+ *    and sends a [[biz.crawler.actor.WorkPullingPattern.WorkAvailable]] message to the router,
+ *    which in turn will forward the message to one of the Workers.
+ * 3) Workers receive the message, and send a [[biz.crawler.actor.WorkPullingPattern.GimmeWork]] to Master.
+ * 4) Master receives several 'GimmeWork' requests, sends a [[biz.crawler.actor.WorkPullingPattern.Work]]
+ *    message to the sender, one for every work item of type T that is in the work queue.
+ *    If a worker does not get a work item, nothing happens -- the next time some work is available
+ *    the Master will notify one if it's workers.
+ *
+ * See [[biz.crawler.actor.WorkPullingPattern]] for the types of messages that are
+ * handled between this master and it's [[biz.crawler.actor.Worker]] actors.
+ *
+ *
+ * This class is intended to be used with an Akka Router [[akka.actor.ActorRef]], with [[biz.crawler.actor.Worker]]
+ * as the intended [[akka.actor.Props]] for the worker.
+ *
+ * Intended to act as a dynamically resizable pool of Workers, to allow for concurrent crawling.
+ *
+ * [[akka.routing.RoundRobinRouter]] or [[akka.routing.SmallestMailboxRouter]] should be used -- other
+ * routers might not function properly.
+ *
+ * @tparam T The type of work being processed.
+ */
+abstract class Master[T] extends Actor {
 
-  val workers = mutable.Set.empty[ActorRef]
+  /**
+   * A Router [[akka.actor.ActorRef]], with [[biz.crawler.actor.Worker]] as the intended [[akka.actor.Props]].
+   * Intended to act as a dynamically resizable pool of Workers.
+   *
+   * Should use [[akka.routing.RoundRobinRouter]] or [[akka.routing.SmallestMailboxRouter]] -- other
+   * routers might not function properly.
+   *
+   * Intended to be set through the [[biz.crawler.actor.WorkPullingPattern.RegisterWorkers]] message.
+   */
+  var workers: Promise[ActorRef] = Promise[ActorRef]()
 
   // Because these vars can only be updated from within this actor,
   // and actors can only process one message at a time, we don't have
@@ -30,10 +69,6 @@ class Master[T] extends Actor {
       onWork(workToAdd.work)
       workHook()
 
-    case RegisterWorker(worker) =>
-      onRegisterWorker(worker)
-      registerWorkerHook()
-
     case Terminated(worker) =>
       onTerminated(worker)
       terminatedHook()
@@ -44,22 +79,27 @@ class Master[T] extends Actor {
 
     case WorkItemDone =>
       workItemDoneHook()
+
+    case RegisterWorkers(workerRouter) =>
+      registerWorkersHook(workerRouter)
   }
 
+  /**
+   * Callback, moved out of the 'receive' method to allow for overriding.
+   *
+   * This default implementation enqueues the provided item of work in the
+   * [[biz.crawler.actor.Master.workQueue]], and notifies one of the
+   * workers that more work is available.
+   *
+   * @param workToAdd The single work item to add to the queue.
+   */
   def onWork(workToAdd: T) {
     workQueue.enqueue(workToAdd)
-    workers foreach { _ ! WorkAvailable }
-  }
-
-  def onRegisterWorker(worker: ActorRef) {
-    play.Logger.info(s"worker $worker registered")
-    context.watch(worker)
-    workers += worker
+    workers.future map { _ ! WorkAvailable }
   }
 
   def onTerminated(worker: ActorRef) {
-    play.Logger.info(s"worker $worker died - taking off the set of workers")
-    workers.remove(worker)
+    play.Logger.info(s"worker $worker terminated")
   }
 
   def onGimmeWork() {
@@ -70,10 +110,13 @@ class Master[T] extends Actor {
     }
   }
 
+  def registerWorkersHook(workerRouter: ActorRef) {
+    workers.success(workerRouter)
+  }
+
   // Override these methods to execute custom code after each possible message type
   def workItemDoneHook() {}
   def workHook() {}
-  def registerWorkerHook() {}
   def terminatedHook() {}
   def gimmeWorkHook() {}
 }

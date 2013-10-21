@@ -1,14 +1,17 @@
 package biz
 
 import org.scalatest._
+
 import biz.crawler.Streams
-import scala.collection.mutable
+import biz.CrawlerExceptions.UrlNotAllowedException
+import biz.SpecHelper.DummyStream
+
 import play.api.libs.iteratee.{ Input, Iteratee, Concurrent }
 import play.api.libs.json.{ JsNumber, JsObject, JsString, JsValue }
 import play.api.libs.iteratee.Concurrent.Channel
+
+import scala.collection.mutable
 import spray.http.HttpResponse
-import biz.CrawlerExceptions.UrlNotAllowedException
-import biz.SpecHelper.DummyStream
 
 class StreamsSpec extends WordSpec with ShouldMatchers with BeforeAndAfter {
   "Streams" when {

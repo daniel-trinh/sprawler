@@ -45,13 +45,11 @@ trait RedirectFollower {
       redirectResponse: Future[HttpResponse],
       redirectsLeft: Int): Future[HttpResponse] = {
 
-      play.Logger.debug(s"Redirects left: $redirectsLeft : Time: ${DateTime.now}")
-
       //TODO: is there a better way of coding this without having a ridiculous amount of nesting?
       async {
-        play.Logger.debug(s"#1 Time: ${DateTime.now}")
+        play.Logger.debug(s"#1 Time: ${DateTime.now}. Redirects left: $redirectsLeft")
         val response = await(redirectResponse)
-        play.Logger.debug(s"#2 Time: ${DateTime.now}")
+        play.Logger.debug(s"#2 Time: ${DateTime.now}. Redirects left: $redirectsLeft")
 
         // Only continue trying to follow redirects if status code is 3xx
         val code = response.status.intValue
@@ -82,13 +80,14 @@ trait RedirectFollower {
               val followedRedirect: Future[HttpResponse] = async {
                 val crawlerDomain = await(originCrawlerUrl.domain.asFuture)
                 val nextRelativePath = nextRedirectUrl.uri.path.toString()
-                val httpClient = CrawlerAgents.getClient(nextRedirectUrl.uri)
+                val httpClient = await(CrawlerAgents.retrieveClient(nextRedirectUrl.uri))
 
                 httpClient.get(nextRelativePath)
 
                 val nextRedirectResponse = httpClient.get(nextRelativePath)
 
-                await(followRedirects1(nextRedirectUrl, nextRedirectResponse, redirectsLeft - 1))
+                val redirected = await(followRedirects1(nextRedirectUrl, nextRedirectResponse, redirectsLeft - 1))
+                redirected
               }
 
               await(followedRedirect)

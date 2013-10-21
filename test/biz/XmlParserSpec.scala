@@ -16,7 +16,7 @@ class XmlParserSpec extends WordSpec with BeforeAndAfter with ShouldMatchers {
             |  <a href="/asdf"/>
             |</html>
           """.stripMargin
-        extractLinks(html) should be === List("/asdf")
+        extractLinks(html, "http://www.google.com") should be === List("http://www.google.com/asdf")
       }
       "parse & within tag attributes" in {
         val html =
@@ -24,7 +24,7 @@ class XmlParserSpec extends WordSpec with BeforeAndAfter with ShouldMatchers {
             |  <a href="http://blahblah.com/abc&nn/" />
             |</html>
           """.stripMargin
-        extractLinks(html) should be === List("http://blahblah.com/abc&nn/")
+        extractLinks(html, "http://blahblah.com/") should be === List("http://blahblah.com/abc&nn/")
       }
       "parse &nn and &variable=" in {
         val html =
@@ -33,16 +33,30 @@ class XmlParserSpec extends WordSpec with BeforeAndAfter with ShouldMatchers {
             |  <a href="abc&variable=1"/>
             |  <link rel="stylesheet" type="text/css" href="http://l.yimg.com/zz/combo?nn/lib/metro/g/uiplugins/lazy_image_0.0.4.css"/>
             |</html>""".stripMargin
-        extractLinks(html) should be === List("def&nn", "abc&variable=1")
-      }
-      "parse unicode escaped &#123" in {
+        extractLinks(html, "http://www.yahoo.com") should be === List("http://www.yahoo.com/def&nn", "http://www.yahoo.com/abc&variable=1")
       }
       "parse javascript & in script tags" in {
         val html = """<html>
           |  <script>1 && 2</script>
           |</html>
         """.stripMargin
-        extractLinks(html) should be === Nil
+        extractLinks(html, "http://www.google.com") should be === Nil
+      }
+      "parse root relative link" in {
+        val html =
+          """<html>
+            |  <a href="../folder"></a>
+            |</html>
+          """.stripMargin
+        extractLinks(html, "http://www.google.com/path/") should be === List("http://www.google.com/folder")
+      }
+      "parse relative link" in {
+        val html =
+          """<html>
+            |  <a href="/folder"></a>
+            |</html>
+          """.stripMargin
+        extractLinks(html, "http://www.google.com/path") should be === List("http://www.google.com/folder")
       }
     }
   }

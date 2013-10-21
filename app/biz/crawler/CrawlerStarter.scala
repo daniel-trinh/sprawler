@@ -18,13 +18,7 @@ import scala.async.Async.{ async, await }
 import scala.util.{ Try, Success, Failure }
 
 import spray.http.{ Uri, HttpResponse }
-import biz.crawler.actor.{ Master, LinkScraperWorker }
-
-// url not crawlable due to robots
-// timeout
-// 1xx, 2xx, 3xx, 4xx, 5xx
-
-// Terminating conditions: Error reached, no more urls to crawl, or depth is reached.
+import biz.crawler.actor.{LinkQueueMaster, LinkScraperWorker}
 
 /**
  * Entry point of Crawler.
@@ -33,8 +27,6 @@ import biz.crawler.actor.{ Master, LinkScraperWorker }
 class CrawlerStarter(url: String) extends Streams {
 
   val request = spray.client.pipelining.Get(url)
-
-  val domain = request.uri.authority.host
 
   val tryCrawlerUrl: Try[CrawlerUrl] = {
 
@@ -73,16 +65,17 @@ class CrawlerStarter(url: String) extends Streams {
 
     tryCrawlerUrl match {
       case Success(crawlerUrl) => {
-
-        // TODO: replace this with a router for several parallel crawlers
-        val masterActor = Akka.system.actorOf(Props(new Master[CrawlerUrl]()))
-        masterActor ! Work(crawlerUrl)
-        val crawlerActor = Akka.system.actorOf(Props(new LinkScraperWorker(masterActor, crawlerUrl, channel)))
-
         crawlerUrl.domain match {
           case Success(d) =>
-            // Start the crawling process by sending the crawler actor a url to crawl
-            crawlerActor ! crawlerUrl
+            // TODO: replace this with a router for several parallel crawlers
+            val masterActor = Akka.system.actorOf(Props(classOf[LinkQueueMaster], List(crawlerUrl)))
+            val workerRouter = Akka.system.actorOf(Props(classOf[LinkScraperWorker],
+              masterActor,
+              crawlerUrl,
+              onUrlComplete _,
+              onNotCrawlable _
+            ))
+
           case Failure(error) =>
             streamJsonErrorFromException(error)
             cleanup()
@@ -94,6 +87,23 @@ class CrawlerStarter(url: String) extends Streams {
       }
     }
   }
-}
 
-case class Links(links: List[String])
+  private def onUrlComplete(url: CrawlerUrl, response: Try[HttpResponse]) {
+    response match {
+      case Success(httpResponse) =>
+        play.Logger.info(s"url successfully fetched: ${url.uri.toString()}")
+        streamJsonResponse(url.fromUri.toString(), url.uri.toString(), httpResponse)
+      case Failure(error) =>
+        play.Logger.error(error.getMessage)
+        streamJsonErrorFromException(error)
+    }
+  }
+
+  private def onNotCrawlable(url: CrawlerUrl, reason: Try[Unit]) {
+    reason match {
+      case Success(_)     => "do nothing"
+      case Failure(error) => play.Logger.debug("NOT CRAWLABLE:"+error.toString())
+    }
+  }
+
+}

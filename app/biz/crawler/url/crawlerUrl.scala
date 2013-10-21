@@ -6,11 +6,29 @@ import biz.CrawlerExceptions.UnprocessableUrlException
 import scala.util.{ Failure, Success, Try }
 
 import spray.http.Uri
+import spray.http.Uri.Empty
 
 /**
  * Data class that contains information about a URL and whether or not it should be crawled.
+ *
+ * [[biz.crawler.url.CrawlerUrl.fromUri]] and [[biz.crawler.url.CrawlerUrl.uri]] are used to
+ * tell the user two things:
+ *
+ * 1) Which URL is the one about to be / has been crawled?
+ * 2) Which URL did this URL originate from (what web page URL was it found on)?
+ *
+ * 'fromUri' and 'uri' were not designed as CrawlerUrls themselves, to prevent a long chain
+ * of references (ie a doubly linked list), so that CrawlerUrls that are no longer
+ * being used can be garbage collected.
+ *
+ * This is important to prevent memory leaks in the case of long crawling sessions.
+ * If it was implemented as a doubly linked list of CrawlerUrls, the CrawlerUrl
+ * chain would only be garbe collected once the crawling session is considered "over",
+ * which can be an arbitrary and unknown amount of time.
  */
-sealed abstract class CrawlerUrl extends CheckUrlCrawlability {
+sealed abstract class CrawlerUrl {
+
+  def isCrawlable: Try[Unit]
 
   /**
    * Used to tell what the previous URI that was crawled was.
@@ -39,16 +57,27 @@ sealed abstract class CrawlerUrl extends CheckUrlCrawlability {
   def depth: Int
 
   /**
-   * TODO: remove this? where is it used?
-   * @param nextUrl
+   * This is used to count the number of times we've been following a particular redirect
    * @return
    */
-  def nextUrl(nextUrl: String): CrawlerUrl = {
-    if (uri.scheme == "https" || uri.scheme == "http") {
-      AbsoluteUrl(uri, nextUrl)
-    } else {
-      throw UnprocessableUrlException(uri.toString(), nextUrl, UnprocessableUrlException.MissingHttpPrefix)
+  def redirectsLeft: Option[Int]
+
+  /**
+   * @param nextUrl If this doesn't have a valid URI scheme, the previous URI's scheme and authority will be used
+   *                as a prefix to this nextUrl for creating the next uri.
+   * @return
+   */
+  def nextUrl(nextUrl: String, redirects: Option[Int] = None): CrawlerUrl = {
+    val nextUrlTrimmed = nextUrl.takeWhile { char =>
+      char != '#'
     }
+
+    AbsoluteUrl(
+      fromUri = uri,
+      uri = nextUrlTrimmed,
+      depth = depth - 1,
+      redirectsLeft = redirects
+    )
   }
 }
 
@@ -70,4 +99,8 @@ sealed trait AbsoluteCrawlerUrl extends CrawlerUrl {
   }
 }
 
-case class AbsoluteUrl(fromUri: Uri, uri: Uri, depth: Int = CrawlerConfig.maxDepth) extends AbsoluteCrawlerUrl
+case class AbsoluteUrl(
+  fromUri: Uri = Empty,
+  uri: Uri,
+  depth: Int = CrawlerConfig.maxDepth,
+  redirectsLeft: Option[Int] = None) extends AbsoluteCrawlerUrl with CheckUrlCrawlability

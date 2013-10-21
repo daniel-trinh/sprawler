@@ -12,15 +12,15 @@ object ApplicationBuild extends Build {
   import Dependencies._
   import Resolvers._
 
-  val appName         = "webcrawler"
+  val appName         = "Scrawler"
   val appVersion      = "0.1.0"
 
   val scalacVersion = "2.10.2"
-  
+
   val appDependencies = sprayDeps ++ akkaDeps ++ miscDeps ++ testDeps ++ crawlerDeps ++ Seq(
     "org.scala-lang" % "scala-compiler" % scalacVersion
   )
-  
+
   val appResolvers = Seq(
     jboss,
     scalaTools,
@@ -54,7 +54,7 @@ object ApplicationBuild extends Build {
       (initialCommands := PreRun.everything) ++
       // Set alternate conf file in test mode
       (javaOptions in Test += "-Dconfig.file=conf/test.conf") ++
-      // Add yeoman commands to sbt 
+      // Add yeoman commands to sbt
       Yeoman.yeomanSettings ++
       // Add akka tracing tool
       atmosSettings ++
@@ -92,7 +92,6 @@ object Resolvers {
 }
 
 object Dependencies {
-
   object V {
     val Spray = "1.1-M8"
     // val Akka  = "2.1.4"
@@ -101,6 +100,9 @@ object Dependencies {
     val SprayNightly = "1.2-20130912"
   }
 
+  // NOTE: if you see a [error] java.lang.ExceptionInInitializerError
+  // it is probably because of a pattern matching problem in one of the dependencies
+  // below.
 
   // Misc
   val miscDeps = Seq(
@@ -114,7 +116,6 @@ object Dependencies {
   val crawlerDeps = Seq(
     "com.google.code.crawler-commons" % "crawler-commons"  % "0.2",
     "org.jsoup"                       % "jsoup"            % "1.7.2"
-    // "com.google.guava"                % "guava"            % "r09",
   )
   val Seq(crawlerCommons, jsoup) = crawlerDeps
 
@@ -146,11 +147,13 @@ object Dependencies {
 
   // Testing dependencies
   val testDeps = Seq(
-    "com.typesafe.akka" %% "akka-testkit"                % V.Akka    % "test",
-    "org.scalatest"     %  "scalatest_2.10"              % "2.0.M5b" % "test",
-    "org.scalamock"     %% "scalamock-scalatest-support" % "3.0.1"   % "test"
+    "com.typesafe.akka" %% "akka-testkit"                % V.Akka         % "test",
+    "org.scalatest"     %  "scalatest_2.10"              % "2.0.M5b"      % "test",
+    "org.scalamock"     %% "scalamock-scalatest-support" % "3.0.1"        % "test",
+    // Used to start a bare bones server for testing the crawler
+    "io.spray"          %  "spray-routing"               % V.SprayNightly % "test"
   )
-  val Seq(akkaTestkit, scalaTest, scalaMock) = testDeps
+  val Seq(akkaTestkit, scalaTest, scalaMock, sprayRouting) = testDeps
 }
 
 /**
