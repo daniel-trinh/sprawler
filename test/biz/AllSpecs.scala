@@ -13,7 +13,6 @@ import play.api.test.Helpers
  */
 class AllSpecs extends Specs(
   new HttpCrawlerClientSpec,
-  new RedirectFollowerSpec,
   new RobotRulesSpec,
   new ThrottlerSpec,
   new StreamsSpec,

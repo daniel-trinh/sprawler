@@ -82,6 +82,7 @@ trait HttpClientPipelines extends Throttler {
         async {
           // Send a dummy object to throttler, and wait for an "ok" back from the throttler
           // to perform an action
+
           val rules = await(robotRules)
           val url = request.uri.toString()
 
@@ -104,8 +105,8 @@ trait HttpClientPipelines extends Throttler {
   }
 
   /**
-   * Same as [[spray.client]].sendReceive, except the HttpResponse is wrapped in a Try.
-   * @return Future'd try'd http response
+   * Same as [[spray.client]].sendReceive
+   * @return A function for performing HTTP requests.
    */
   def sendReceiver: HttpRequest => Future[HttpResponse] = {
     sendReceive
@@ -125,9 +126,11 @@ trait HttpClientPipelines extends Throttler {
         val p = Promise[Boolean]()
         await(throttler) ! PromiseRequest(p)
         await(p.future)
+        play.Logger.debug(s"crawl delay rate: ${crawlDelayRate}")
         val result = await(sendReceiver(request))
         result
       } else {
+
         await(Future.failed[HttpResponse](
           UrlNotAllowedException(
             host = domain,

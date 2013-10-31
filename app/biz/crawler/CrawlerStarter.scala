@@ -25,16 +25,15 @@ import biz.crawler.actor.{LinkQueueMaster, LinkScraperWorker}
  * @param url The initial URL to start crawling from.
  */
 class CrawlerStarter(url: String) extends Streams {
-
   val request = spray.client.pipelining.Get(url)
 
   val tryCrawlerUrl: Try[CrawlerUrl] = {
 
-    val urlToCrawl = AbsoluteUrl(url, url)
+    val urlToCrawl = AbsoluteUrl(uri = url)
     val isCrawlable = urlToCrawl.isCrawlable
 
     isCrawlable match {
-      case Success(_)     => Success(AbsoluteUrl(url, url))
+      case Success(_)     => Success(urlToCrawl)
       case Failure(error) => Failure(error)
     }
   }

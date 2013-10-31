@@ -4,7 +4,6 @@ import biz.concurrency.FutureImplicits._
 import biz.config.CrawlerConfig
 import biz.crawler.CrawlerAgents._
 import biz.crawler.url.{ AbsoluteUrl, CrawlerUrl }
-import biz.http.client.RedirectFollower
 import biz.XmlParser
 import biz.CrawlerExceptions.{ RedirectLimitReachedException, MissingRedirectUrlException }
 
@@ -37,7 +36,7 @@ class LinkScraperWorker(
   master: ActorRef,
   originCrawlerUrl: CrawlerUrl,
   onUrlComplete: (CrawlerUrl, Try[HttpResponse]) => Unit,
-  onUrlNotCrawlable: (CrawlerUrl, Try[Unit]) => Unit)
+  onUrlNotCrawlable: (CrawlerUrl, Throwable) => Unit)
     extends Worker[CrawlerUrl](master) {
 
   import WorkPullingPattern._
@@ -62,9 +61,11 @@ class LinkScraperWorker(
   def doWork(url: CrawlerUrl): Future[HttpResponse] = {
 
     val crawlable = url.isCrawlable
+
     // reject urls that are not crawlable
-    if (crawlable.isFailure) {
-      onUrlNotCrawlable(url, crawlable)
+    crawlable match {
+      case Failure(error) => onUrlNotCrawlable(url, error)
+      case Success(_)     => url.session.visitedUrls.put(url.uri.toString(), true)
     }
 
     val futureResponse = async {
@@ -73,7 +74,9 @@ class LinkScraperWorker(
       await(crawlable.asFuture)
 
       val client = await(retrieveClient(url.uri))
+
       val response = await(client.get(url.uri))
+
       val status = response.status.intValue
 
       val res: HttpResponse = if (status == 200) {
@@ -86,7 +89,7 @@ class LinkScraperWorker(
       } else if (isRedirect(status)) {
         url.redirectsLeft match {
           case Some(redirectNum) =>
-            await(followRedirect(url, response, redirectNum - 1))
+            await(followRedirect(url, response, redirectNum))
           case None =>
             await(followRedirect(url, response, CrawlerConfig.maxRedirects))
         }
@@ -98,9 +101,7 @@ class LinkScraperWorker(
 
     futureResponse.onComplete { tryHttpResponse =>
       master ! WorkItemDone
-      CrawlerAgents.visitedUrls send { urls =>
-        urls += url.uri.toString
-      }
+
       onUrlComplete(url, tryHttpResponse)
     }
 

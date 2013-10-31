@@ -91,7 +91,6 @@ class HttpCrawlerClientSpec
           val requests = Future.sequence(requestList)
           val timeout = intercept[java.util.concurrent.TimeoutException] {
             val result = Await.result(requests, CrawlerConfig.defaultCrawlDelay.milliseconds)
-            println(result)
           }
           timeout.getMessage should be === s"Futures timed out after [${CrawlerConfig.defaultCrawlDelay} milliseconds]"
         }
@@ -122,7 +121,6 @@ class HttpCrawlerClientSpec
       "handle 300s" in {
         localHttpTest { client =>
           val request = client.get("/test/redirect")
-          println(client)
           val result = Await.result(request, 5.seconds)
           result.status.value should be === "301 Moved Permanently"
         }

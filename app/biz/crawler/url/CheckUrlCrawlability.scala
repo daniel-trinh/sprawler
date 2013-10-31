@@ -1,10 +1,21 @@
 package biz.crawler.url
 
-import biz.crawler.CrawlerAgents
+import biz.crawler.{ CrawlerSession, CrawlerAgents }
+import biz.CrawlerExceptions.{ UnprocessableUrlException, RedirectLimitReachedException }
+
 import scala.util.{ Success, Failure, Try }
-import biz.CrawlerExceptions.UnprocessableUrlException
+import spray.http.Uri.Empty
+import java.util.concurrent.ConcurrentHashMap
 
 trait CheckUrlCrawlability { this: CrawlerUrl =>
+
+  /**
+   * Required for figuring out which URLs have been crawled during this crawling
+   * session.
+   * See [[biz.crawler.CrawlerSession.visitedUrls]].
+   * @return
+   */
+  def session: CrawlerSession
 
   /**
    * Tests if the provided url's UrlHelper matches the base crawler's UrlHelper.
@@ -21,10 +32,21 @@ trait CheckUrlCrawlability { this: CrawlerUrl =>
    * }}}
    */
   def sameDomain: Boolean = {
-    if (this.fromUri.authority.host == this.uri.authority.host)
+    if (this.fromUri != Empty) {
+      if (this.fromUri.authority.host == this.uri.authority.host)
+        true
+      else
+        false
+    } else {
       true
-    else
-      false
+    }
+  }
+
+  val hasRedirectsLeft: Boolean = {
+    redirectsLeft match {
+      case Some(num) => num > 0
+      case None      => true
+    }
   }
 
   val isWithinDepth: Boolean = {
@@ -47,8 +69,13 @@ trait CheckUrlCrawlability { this: CrawlerUrl =>
       true
   }
 
-  // May report false negatives because of Agent behavior
-  val isVisited: Boolean = CrawlerAgents.visitedUrls().contains(uri.toString())
+  /**
+   * May contain false negatives, since [[java.util.concurrent.ConcurrentHashMap]]
+   *
+   */
+  def isVisited: Boolean = {
+    session.visitedUrls.containsKey(uri.toString())
+  }
 
   /**
    * This method determines whether or not this url can be crawled.
@@ -79,6 +106,8 @@ trait CheckUrlCrawlability { this: CrawlerUrl =>
       generateUrlError(UnprocessableUrlException.InvalidDomain)
     } else if (!isWithinDepth) {
       generateUrlError(UnprocessableUrlException.MaxDepthReached)
+    } else if (!hasRedirectsLeft) {
+      Failure(RedirectLimitReachedException(this.fromUri.toString(), this.uri.toString()))
     } else if (!sameDomain) {
       generateUrlError(UnprocessableUrlException.NotSameOrigin)
     } else if (isVisited) {

@@ -1,21 +1,23 @@
 ### Todo
 
 + Needs testing: Figure out how to only download x kb from websites (truncate pages) to avoid crawling pages that are huge -- solution, use spray-client. if over limit, returns an error instead
-+ Needs testing: Impose a time limit between requests for a particular domain (2 seconds?)
-+ Figure out wtf depth is used for
 + Define API interface / json format for chunks to push to client
 + Implement API interface
-+ add build properties file for sbt version
-+ fix crawling when no "/" is passed in at the end of the URL
-+ fix broken ass throttler
 + fix invalid API URLs to server so they dont return html
-+ fix errors / warnings that occur when urls with '#' are in them
++ fix crawler agents visited url to not be global scope that exists forever (global LRU cache? one
+  per session?)
++ refactor webcrawler code into separate library
+  * replace all usages of play Akka.system with implicit akka system
+  * replace all usages of global ExecutionContext with implicit EC
+  * refactor/rename all packages to something more specific from "biz"
++ update to sbt 13
++ update to play 2.2.1
+
 
 ### Notes
 
 + So yea.. don't shut down Akka.system or restart it, the code for throttling HTTP requests
   relies on it being up, since the throttling mechanism uses akka actors.
-
 
 ### Build Status
 [![Build Status](https://travis-ci.org/daniel-trinh/webcrawler.png?branch=wip)](https://travis-ci.org/daniel-trinh/webcrawler)

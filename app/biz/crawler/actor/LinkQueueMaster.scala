@@ -8,8 +8,10 @@ import biz.crawler.url.CrawlerUrl
 import scala.concurrent.ExecutionContext
 import spray.can.client.{ HostConnectorSettings, ClientConnectionSettings }
 
-class LinkQueueMaster(seedUrls: List[CrawlerUrl])(implicit ctx: ExecutionContext) extends Master[CrawlerUrl] {
+class LinkQueueMaster(seedUrls: List[CrawlerUrl], ctx: ExecutionContext) extends Master[CrawlerUrl] {
   import WorkPullingPattern._
+
+  implicit val ec = ctx
 
   // Start the crawling process
   seedUrls.foreach { url =>

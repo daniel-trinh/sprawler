@@ -200,7 +200,6 @@ trait Throttler {
    */
   lazy val throttler: Future[ActorRef] = async {
     val delayRate = await(crawlDelayRate)
-    play.Logger.debug(s"crawlDelayRate:$delayRate")
     val throttle = Akka.system.actorOf(Props(new TimerBasedThrottler(delayRate)))
 
     play.Logger.debug(s"Message Sent: Time: ${DateTime.now}")

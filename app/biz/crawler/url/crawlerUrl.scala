@@ -7,6 +7,7 @@ import scala.util.{ Failure, Success, Try }
 
 import spray.http.Uri
 import spray.http.Uri.Empty
+import biz.crawler.CrawlerSession
 
 /**
  * Data class that contains information about a URL and whether or not it should be crawled.
@@ -27,6 +28,8 @@ import spray.http.Uri.Empty
  * which can be an arbitrary and unknown amount of time.
  */
 sealed abstract class CrawlerUrl {
+
+  def session: CrawlerSession
 
   def isCrawlable: Try[Unit]
 
@@ -63,6 +66,9 @@ sealed abstract class CrawlerUrl {
   def redirectsLeft: Option[Int]
 
   /**
+   * Convenience method for creating another CrawlerUrl, containing information about a url that
+   * was found on another url's page.
+   *
    * @param nextUrl If this doesn't have a valid URI scheme, the previous URI's scheme and authority will be used
    *                as a prefix to this nextUrl for creating the next uri.
    * @return
@@ -75,14 +81,23 @@ sealed abstract class CrawlerUrl {
     AbsoluteUrl(
       fromUri = uri,
       uri = nextUrlTrimmed,
+      session = session,
       depth = depth - 1,
       redirectsLeft = redirects
     )
   }
 }
 
-sealed trait AbsoluteCrawlerUrl extends CrawlerUrl {
+case class AbsoluteUrl(
+    fromUri: Uri = Empty,
+    uri: Uri,
+    session: CrawlerSession = new CrawlerSession,
+    depth: Int = CrawlerConfig.maxDepth,
+    redirectsLeft: Option[Int] = None) extends CrawlerUrl with CheckUrlCrawlability {
+
   val domain: Try[String] = {
+    // URI does not parse correctly if it doesn't have a valid scheme -- the entire url
+    // will be treated as a path attribute instead of being split into an authority and path.
     val prependedUrl = if (uri.scheme != "https" && uri.scheme != "http") {
       s"http${uri.authority.toString()}"
     } else {
@@ -98,9 +113,3 @@ sealed trait AbsoluteCrawlerUrl extends CrawlerUrl {
     }
   }
 }
-
-case class AbsoluteUrl(
-  fromUri: Uri = Empty,
-  uri: Uri,
-  depth: Int = CrawlerConfig.maxDepth,
-  redirectsLeft: Option[Int] = None) extends AbsoluteCrawlerUrl with CheckUrlCrawlability

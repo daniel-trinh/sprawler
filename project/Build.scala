@@ -175,11 +175,13 @@ object PreRun {
 
     val webcrawler =
       """
+        |import biz._
         |import biz.CrawlerExceptions._
         |import biz.XmlParser
         |import biz.http.client.HttpCrawlerClient
         |import biz.config.CrawlerConfig
-        |import crawlercommons.robots.{ BaseRobotRules, SimpleRobotRulesParser }
+        |import biz.crawler.url._
+        import crawlercommons.robots.{ BaseRobotRules, SimpleRobotRulesParser }
       """.stripMargin
     val play =
       """
@@ -193,6 +195,7 @@ object PreRun {
         |import scala.concurrent.{ Promise, Future }
         |import scala.async.Async.{ async, await }
         |import scala.concurrent.duration._
+        |import scala.concurrent.Await
         |import scala.util.{ Try, Success, Failure }
         |import scala.{ Some, None }
       """.stripMargin
@@ -209,7 +212,12 @@ object PreRun {
   }
 
   object Commands {
-    val playTestServer =  """ new StaticApplication(new java.io.File(".")) """
+    val playTestServer =  """ 
+      new StaticApplication(new java.io.File(".")) 
+    """
+    val akkaSystem = """ 
+      implicit val system = Akka.system 
+    """
     val commands = playTestServer
   }
 

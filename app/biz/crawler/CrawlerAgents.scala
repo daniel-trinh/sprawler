@@ -17,14 +17,8 @@ import spray.util._
 
 /**
  * Things that need to be shared across the crawler's session
- * TODO: move visited urls into Redis
  */
 object CrawlerAgents {
-
-  /**
-   * Stores all visited urls across this Crawler session's lifetime.
-   */
-  val visitedUrls = Agent(new mutable.HashSet[String]())
 
   /**
    * Lookup table for robots.txt rules for a particular url
@@ -42,5 +36,4 @@ object CrawlerAgents {
       Future.successful(HttpCrawlerClient(uri))
     }
   }
-
 }
