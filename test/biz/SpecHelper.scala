@@ -1,6 +1,7 @@
 package biz
 
 import akka.contrib.throttle.Throttler.Rate
+import akka.actor.ActorSystem
 
 import biz.http.client.{ PromiseRequest, Throttler, HttpCrawlerClient }
 import biz.crawler.{ CrawlerAgents, Streams }
@@ -20,6 +21,7 @@ import scala.concurrent.duration._
 import scala.concurrent.{ Await, Promise, Future }
 
 trait SpecHelper {
+  implicit val system: ActorSystem = ActorSystem("CrawlerSystem")
 
   import SpecHelper.{ serverStarted, testServer }
 
@@ -48,7 +50,7 @@ trait SpecHelper {
     )
     // This would normally be bad code because of the blocking Await, but this is only supposed
     // to be used for specs.
-    f(Await.result(client, 5 seconds))
+    f(Await.result(client, 5.seconds))
   }
 
   private def printUri(uri: Uri) {
@@ -126,7 +128,9 @@ object SpecHelper {
   }
 
   trait DummyThrottler extends Throttler with WordSpec with ShouldMatchers {
-    val crawlDelayRate = Future(Rate(1, 1.second))
+    val system = ActorSystem("ThrottlerSystem")
+
+    val crawlDelayRate = Future.successful(Rate(1, 1.second))
 
     def testThrottling() {
       val promiseOne = Promise[Boolean]()

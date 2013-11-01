@@ -9,12 +9,10 @@ import biz.XmlParser
 import biz.config.CrawlerConfig
 import crawlercommons.robots.{ BaseRobotRules, SimpleRobotRulesParser }
 
-import play.api.libs.concurrent.Execution.Implicits._
-import play.libs.Akka
-
 import scala.concurrent.{ Promise, Future }
 import scala.async.Async.{ async, await }
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext
 import scala.util.{ Try, Success, Failure }
 import scala.{ Some, None }
 
@@ -24,7 +22,6 @@ import spray.http.HttpResponse
 
 import akka.contrib.throttle.Throttler.SetTarget
 import akka.contrib.throttle.Throttler.Rate
-import play.api.Logger
 
 /**
  * Creates a HTTP client scoped by domain, for performing GET requests
@@ -33,7 +30,7 @@ import play.api.Logger
  * }}}
  * @param uri The base URI that contains the hostname of the domain to crawl.
  */
-case class HttpCrawlerClient(uri: Uri) extends HttpClientPipelines {
+case class HttpCrawlerClient(uri: Uri)(implicit val system: ActorSystem) extends HttpClientPipelines {
 
   val baseDomain = s"${uri.scheme}://${uri.authority.host.address}"
   val port = uri.authority.port
@@ -124,7 +121,6 @@ case class HttpCrawlerClient(uri: Uri) extends HttpClientPipelines {
     val attemptRate = async {
       val rules = await(robotRules)
       val delay = rules.getCrawlDelay
-      Logger.debug(s"delay:$delay")
       1 msgsPer delay.milliseconds
     }
 
@@ -137,7 +133,6 @@ case class HttpCrawlerClient(uri: Uri) extends HttpClientPipelines {
 
   private def fetchRules: Future[BaseRobotRules] = {
     val request = Get(domain+"/robots.txt")
-    play.Logger.debug(s"robot rules being fetched: $request")
     fetchRobotRules(request)
   }
 }
@@ -173,6 +168,9 @@ object RobotRules {
  */
 trait Throttler {
 
+  val system: ActorSystem
+  implicit lazy val ec: ExecutionContext = system.dispatcher
+
   /**
    * This duration value represents how
    * @return a future'd duration of how often to poop
@@ -182,13 +180,12 @@ trait Throttler {
   /**
    * Dummy actor that does nothing but complete a supplied promise when a message is received
    */
-  lazy val forwarder = Akka.system.actorOf(Props(new Actor {
+  lazy val forwarder = system.actorOf(Props(new Actor {
     /**
      * Receives a [[biz.http.client.PromiseRequest]], and complete's the promise with 'true'
      */
     def receive = {
       case PromiseRequest(promise) => {
-        play.Logger.debug(s"Message Received: Time: ${DateTime.now}")
         promise success true
       }
     }
@@ -200,9 +197,8 @@ trait Throttler {
    */
   lazy val throttler: Future[ActorRef] = async {
     val delayRate = await(crawlDelayRate)
-    val throttle = Akka.system.actorOf(Props(new TimerBasedThrottler(delayRate)))
+    val throttle = system.actorOf(Props(new TimerBasedThrottler(delayRate)))
 
-    play.Logger.debug(s"Message Sent: Time: ${DateTime.now}")
     throttle ! SetTarget(Some(forwarder))
     throttle
   }

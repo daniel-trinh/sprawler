@@ -4,6 +4,8 @@ import play.api.libs.json._
 import play.api.libs.functional.syntax._
 import biz.config.CrawlerConfig
 
+import scala.util.control.NoStackTrace
+
 /**
  * Exceptions used for this webcrawler project
  */
@@ -139,7 +141,7 @@ object CrawlerExceptions {
    */
   case class UnknownException(
     message: String,
-    errorType: String = "unknown") extends CrawlerException(message)
+    errorType: String = "unknown") extends RuntimeException(message)
 }
 
-sealed class CrawlerException(message: String) extends RuntimeException(message)
+sealed class CrawlerException(message: String) extends RuntimeException(message) with NoStackTrace

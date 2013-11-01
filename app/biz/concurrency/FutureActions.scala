@@ -2,11 +2,8 @@ package biz.concurrency
 
 import akka.actor.ActorSystem
 
-import play.api.libs.concurrent.{ Akka, Promise }
-import play.api.Play.current
-
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ ExecutionContext, Future, Promise }
 
 /**
  * Extra useful concurrency related stuff to help with common concurrency tasks
@@ -26,12 +23,11 @@ object FutureActions {
    */
   def futureTask[A](
     message: => A,
-    duration: FiniteDuration,
-    system: ActorSystem = Akka.system)(implicit ec: ExecutionContext): Future[A] = {
+    duration: FiniteDuration)(implicit system: ActorSystem, ec: ExecutionContext): Future[A] = {
 
     val p = Promise[A]()
     system.scheduler.scheduleOnce(delay = duration) {
-      p.completeWith(Future(message)(ec))
+      p.completeWith(Future.successful(message))
     }
     p.future
   }

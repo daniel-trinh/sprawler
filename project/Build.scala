@@ -34,7 +34,11 @@ object ApplicationBuild extends Build {
     proguardOptions := Seq(keepMain("Test"))
   )
 
-  val scalacSettings = Seq("-Dscalac.patmat.analysisBudget=off", "-feature")
+  val scalacSettings = Seq(
+    "-Dscalac.patmat.analysisBudget=off",
+    "-feature" 
+    // "-Xcheckinit"
+  )
 
   lazy val async = Project(
     id   = "async",

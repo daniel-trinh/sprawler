@@ -3,19 +3,18 @@ package biz.crawler.actor
 import biz.concurrency.FutureImplicits._
 import biz.config.CrawlerConfig
 import biz.crawler.CrawlerAgents._
-import biz.crawler.url.{ AbsoluteUrl, CrawlerUrl }
+import biz.crawler.url.CrawlerUrl
 import biz.XmlParser
 import biz.CrawlerExceptions.{ RedirectLimitReachedException, MissingRedirectUrlException }
 
-import akka.actor.{ ActorRef, Actor }
+import akka.actor.ActorRef
 
-import spray.http.{ HttpHeader, HttpResponse }
+import spray.http.HttpResponse
 
 import scala.async.Async.{ async, await }
 import scala.util.{ Try, Success, Failure }
 import scala.{ Some, None }
 import scala.concurrent.Future
-import biz.crawler.CrawlerAgents
 
 /**
  * Crawls, finds links, sends them to [[biz.crawler.actor.LinkScraperWorker.master]]
@@ -40,6 +39,8 @@ class LinkScraperWorker(
     extends Worker[CrawlerUrl](master) {
 
   import WorkPullingPattern._
+
+  implicit val system = context.system
 
   /**
    * Attempts to crawl the provided url.

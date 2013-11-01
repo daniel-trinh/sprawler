@@ -226,8 +226,8 @@ object DeadLinkSpec {
     f(workerRouter)
   }
 
-  def setupMaster[T](workerRef: ActorRef, url: CrawlerUrl)(f: ActorRef => T)(implicit system: ActorSystem, ctx: ExecutionContext): T = {
-    val masterProps = Props(classOf[LinkQueueMaster], List(url), ctx)
+  def setupMaster[T](workerRef: ActorRef, url: CrawlerUrl)(f: ActorRef => T)(implicit system: ActorSystem): T = {
+    val masterProps = Props(classOf[LinkQueueMaster], List(url))
     val master = system.actorOf(masterProps)
     master ! RegisterWorkers(workerRef)
 

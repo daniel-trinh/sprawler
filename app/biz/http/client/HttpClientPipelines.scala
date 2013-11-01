@@ -11,18 +11,16 @@ import biz.http.client._
 import crawlercommons.robots.BaseRobotRules
 
 import scala.async.Async._
-import scala.concurrent.{ Promise, Future }
+import scala.concurrent.{ Promise, Future, ExecutionContext }
 import scala.util.{ Failure, Success, Try }
 
 import spray.http.{ StatusCodes, HttpRequest, HttpResponse }
 import spray.client.pipelining._
 
-import play.api.libs.concurrent.Execution.Implicits._
-import play.libs.Akka
-
 trait HttpClientPipelines extends Throttler {
 
-  private implicit val system = Akka.system
+  implicit val system: ActorSystem
+  implicit val ec: ExecutionContext
 
   /**
    * Base url of the website being crawled.

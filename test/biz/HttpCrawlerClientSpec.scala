@@ -1,5 +1,7 @@
 package biz
 
+import akka.actor.ActorSystem
+
 import biz.config.CrawlerConfig
 import biz.CrawlerExceptions._
 import biz.http.client.HttpCrawlerClient
@@ -7,16 +9,10 @@ import biz.http.client.HttpCrawlerClient
 import org.scalatest._
 import org.scalatest.matchers.ShouldMatchers
 
-import play.api.test.Helpers._
-import play.api.test.{ WithApplication, TestServer }
-import play.core.StaticApplication
-import play.api.libs.concurrent.Execution.Implicits._
-import play.api.libs.concurrent.Akka
-import play.api.Play.current
-import play.api.libs.ws.WS
-import play.api.Logger
+import scala.concurrent.{ ExecutionContext, Future, Await }
+import scala.concurrent.ExecutionContext.Implicits.global
 
-import scala.concurrent.{ Future, Await }
+import scala.concurrent.{ Future, Await, ExecutionContext }
 import scala.concurrent.duration._
 import scala.util.{ Try, Failure, Success }
 
@@ -60,15 +56,8 @@ class HttpCrawlerClientSpec
         localHttpTest { client =>
           val request = client.get("/test/timeout")
 
-          val timeout = ClientConnectionSettings(Akka.system).requestTimeout.length.longValue()
-          val retries = HostConnectorSettings(Akka.system).maxRetries.longValue()
-
-          Logger.debug(
-            s"""
-              |timeout:$timeout
-              |retries:$retries
-              |duration:${(timeout * (retries + 2)).milliseconds}
-            """.stripMargin)
+          val timeout = ClientConnectionSettings(system).requestTimeout.length.longValue()
+          val retries = HostConnectorSettings(system).maxRetries.longValue()
 
           //          Add extra slight delay to allow timeout failure to be returned
           val result = Try(Await.result(request, (timeout * (retries + 2)).seconds))

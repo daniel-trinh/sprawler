@@ -1,13 +1,15 @@
 package biz
 
-import org.scalatest._
-import biz.http.client.{ PromiseRequest, Throttler }
 import akka.contrib.throttle.Throttler.Rate
-import scala.concurrent.{ Await, Promise, Future }
-import scala.concurrent.duration._
-import play.api.libs.concurrent.Execution.Implicits._
-import play.core.StaticApplication
+
+import biz.http.client.{ PromiseRequest, Throttler }
 import biz.SpecHelper.DummyThrottler
+
+import org.scalatest._
+
+import scala.concurrent.{ Await, Promise, Future }
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 // This spec should not be run by its own, instead it should be run indirectly through ServerDependentSpecs
 @DoNotDiscover

@@ -7,8 +7,6 @@
 + fix crawler agents visited url to not be global scope that exists forever (global LRU cache? one
   per session?)
 + refactor webcrawler code into separate library
-  * replace all usages of play Akka.system with implicit akka system
-  * replace all usages of global ExecutionContext with implicit EC
   * refactor/rename all packages to something more specific from "biz"
 + update to sbt 13
 + update to play 2.2.1

@@ -2,18 +2,17 @@ package biz.crawler.actor
 
 import akka.actor.{ ActorSystem, ActorRef, Actor, Terminated, Props }
 import akka.routing._
+import akka.actor.Terminated
+import akka.routing.Broadcast
 
 import biz.crawler.actor.WorkPullingPattern._
+import biz.crawler.actor.WorkPullingPattern.Work
 
 import scala.collection.mutable
-
-import play.api.libs.concurrent.Akka
-import play.api.libs.concurrent.Execution.Implicits._
-import biz.crawler.actor.WorkPullingPattern.Work
-import akka.actor.Terminated
-import scala.Some
-import akka.routing.Broadcast
 import scala.concurrent.{ Future, Promise }
+import scala.concurrent.ExecutionContext
+
+import scala.Some
 
 /**
  * A 'master' actor that stores a work items of type T in [[biz.crawler.actor.Master.workQueue]],
@@ -46,6 +45,7 @@ import scala.concurrent.{ Future, Promise }
  * @tparam T The type of work being processed.
  */
 abstract class Master[T] extends Actor {
+  implicit val ec = context.dispatcher
 
   /**
    * A Router [[akka.actor.ActorRef]], with [[biz.crawler.actor.Worker]] as the intended [[akka.actor.Props]].
