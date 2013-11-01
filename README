@@ -1,15 +1,25 @@
 ### Todo
 
-+ Needs testing: Figure out how to only download x kb from websites (truncate pages) to avoid crawling pages that are huge -- solution, use spray-client. if over limit, returns an error instead
+#### Priority 0 (higher is more important)
+
++ refactor webcrawler code into separate library
+  * refactor/rename all packages to something more specific from "biz"
+  * separate Build.scala into two separate Build.scala files (one for dead link finding
+    specific code, another for webcrawler related code).
 + Define API interface / json format for chunks to push to client
 + Implement API interface
 + fix invalid API URLs to server so they dont return html
-+ fix crawler agents visited url to not be global scope that exists forever (global LRU cache? one
-  per session?)
-+ refactor webcrawler code into separate library
-  * refactor/rename all packages to something more specific from "biz"
 + update to sbt 13
-+ update to play 2.2.1
++ update to play 2.2.1, use play-json only when webcrawler code is pulled out
+
+#### Priority 1
+
++ Needs testing: Figure out how to only download x kb from websites (truncate pages) to avoid crawling pages that are huge -- solution, use spray-client. if over limit, returns an error instead
+
++ Needs testing: make sure correct exceptions are serialized in certain circumstances
+
+#### Priority 3
++ fix compiler warnings
 
 
 ### Notes
@@ -19,3 +29,8 @@
 
 ### Build Status
 [![Build Status](https://travis-ci.org/daniel-trinh/webcrawler.png?branch=wip)](https://travis-ci.org/daniel-trinh/webcrawler)
+
+
+
+Total lines added: 9905
+Total lines removed: 4751

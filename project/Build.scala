@@ -4,8 +4,6 @@ import com.typesafe.sbt.SbtScalariform
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 import com.tuplejump.sbt.yeoman.Yeoman
 import com.typesafe.sbt.SbtAtmos.{ Atmos, atmosSettings }
-import ProguardPlugin._
-
 
 object ApplicationBuild extends Build {
 
@@ -15,7 +13,7 @@ object ApplicationBuild extends Build {
   val appName         = "Scrawler"
   val appVersion      = "0.1.0"
 
-  val scalacVersion = "2.10.2"
+  val scalacVersion = "2.10.3"
 
   val appDependencies = sprayDeps ++ akkaDeps ++ miscDeps ++ testDeps ++ crawlerDeps ++ Seq(
     "org.scala-lang" % "scala-compiler" % scalacVersion
@@ -28,10 +26,6 @@ object ApplicationBuild extends Build {
     spray,
     sprayNightly,
     sonatype
-  )
-
-  lazy val proguard = proguardSettings ++ Seq(
-    proguardOptions := Seq(keepMain("Test"))
   )
 
   val scalacSettings = Seq(
@@ -61,8 +55,7 @@ object ApplicationBuild extends Build {
       // Add yeoman commands to sbt
       Yeoman.yeomanSettings ++
       // Add akka tracing tool
-      atmosSettings ++
-      proguard: _*
+      atmosSettings: _*
   ) aggregate(async) dependsOn(async)
 
 

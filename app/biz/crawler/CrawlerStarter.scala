@@ -1,24 +1,20 @@
 package biz.crawler
 
-import akka.agent._
 import akka.actor._
 
 import biz.crawler.url.{ AbsoluteUrl, CrawlerUrl }
-import biz.crawler.actor.WorkPullingPattern._
 
 import play.api.libs.json._
 import play.api.libs.iteratee._
 import play.api.libs.concurrent.Akka
 import play.api.libs.iteratee.Concurrent.Channel
+import play.api.libs.concurrent.Execution.Implicits._
 import play.api.Play.current
 
-import scala.concurrent.{ Promise, Future }
-import scala.collection.mutable
-import scala.async.Async.{ async, await }
 import scala.util.{ Try, Success, Failure }
 
-import spray.http.{ Uri, HttpResponse }
-import biz.crawler.actor.{LinkQueueMaster, LinkScraperWorker}
+import spray.http.HttpResponse
+import biz.crawler.actor.{ LinkQueueMaster, LinkScraperWorker }
 
 /**
  * Entry point of Crawler.
