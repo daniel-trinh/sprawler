@@ -98,14 +98,10 @@ abstract class Master[T] extends Actor {
     workers.future map { _ ! WorkAvailable }
   }
 
-  def onTerminated(worker: ActorRef) {
-    play.Logger.info(s"worker $worker terminated")
-  }
+  def onTerminated(worker: ActorRef) {}
 
   def onGimmeWork() {
-    if (workQueue.isEmpty) {
-      play.Logger.info("workers asked for work but we've no more work to do")
-    } else {
+    if (!workQueue.isEmpty) {
       sender ! Work(workQueue.dequeue())
     }
   }

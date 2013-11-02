@@ -6,17 +6,26 @@
   * refactor/rename all packages to something more specific from "biz"
   * separate Build.scala into two separate Build.scala files (one for dead link finding
     specific code, another for webcrawler related code).
+
 + Define API interface / json format for chunks to push to client
+
 + Implement API interface
+
 + fix invalid API URLs to server so they dont return html
-+ update to sbt 13
-+ update to play 2.2.1, use play-json only when webcrawler code is pulled out
+
++ update scala-async to the latest compatible version
+
++ modularize existing CheckUrlCrawlability code, using stackable traits pattern?
 
 #### Priority 1
+
++ Add sitemaps to initial crawling
 
 + Needs testing: Figure out how to only download x kb from websites (truncate pages) to avoid crawling pages that are huge -- solution, use spray-client. if over limit, returns an error instead
 
 + Needs testing: make sure correct exceptions are serialized in certain circumstances
+
++ Tweak test.conf settings and add code overrides to get specs to run faster
 
 #### Priority 3
 + fix compiler warnings
@@ -29,7 +38,6 @@
 
 ### Build Status
 [![Build Status](https://travis-ci.org/daniel-trinh/webcrawler.png?branch=wip)](https://travis-ci.org/daniel-trinh/webcrawler)
-
 
 
 Total lines added: 9905

@@ -72,6 +72,7 @@ class LinkScraperWorker(
     val futureResponse = async {
       // Complete this future with the exception created in the failed url.isCrawlable call,
       // or continue on if the url is crawlable.
+
       await(crawlable.asFuture)
 
       val client = await(retrieveClient(url.uri))

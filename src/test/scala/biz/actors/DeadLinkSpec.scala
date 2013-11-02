@@ -8,17 +8,18 @@ import biz.DummyTestServer
 import biz.crawler.actor.{ LinkQueueMaster, LinkScraperWorker }
 import biz.crawler.actor.WorkPullingPattern._
 import biz.crawler.url.{ CrawlerUrl, AbsoluteUrl }
+import biz.SpecHelper
 
-import org.scalatest.{ ShouldMatchers, WordSpec, BeforeAndAfter }
+import org.scalatest.{ ShouldMatchers, WordSpec, BeforeAndAfter, BeforeAndAfterAll }
 
 import scala.collection.mutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
+import scala.util.{ Failure, Success, Try }
+import scala.concurrent.ExecutionContext.Implicits.global
 
 import spray.http.{ HttpResponse, Uri }
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.{ Failure, Success, Try }
 import spray.can.Http
 
 class DeadLinkSpec(_system: ActorSystem)
@@ -26,17 +27,24 @@ class DeadLinkSpec(_system: ActorSystem)
     with ImplicitSender
     with WordSpec
     with BeforeAndAfter
+    with BeforeAndAfterAll
     with ShouldMatchers {
+
+  override def beforeAll {
+    DummyTestServer.startTestServer()
+  }
+  override def afterAll {
+    DummyTestServer.shutdownTestServer(system)
+  }
 
   def this() = this(ActorSystem("CrawlerSystem"))
 
   "LinkQueueMaster" should {
     val crawlerUrl = AbsoluteUrl(
-      uri = Uri("http://localhost:8080/redirectOnce")
+      uri = Uri(SpecHelper.testDomain+"/redirectOnce")
     )
 
     "schedule initial link to be crawled to workers" in {
-
       DeadLinkSpec.setupMaster(self, crawlerUrl) { master =>
         expectMsg(WorkAvailable)
       }
@@ -90,13 +98,9 @@ class DeadLinkSpec(_system: ActorSystem)
     var urlsCrawled: mutable.ArrayBuffer[String] = null
     var urlsFailed: mutable.ArrayBuffer[String] = null
 
-    before {
-      DummyTestServer.startTestServer
-    }
-
     "handle single redirect" in {
       val crawlerUrl = AbsoluteUrl(
-        uri = Uri("http://localhost:8080/redirectOnce")
+        uri = Uri(SpecHelper.testDomain+"/redirectOnce")
       )
 
       DeadLinkSpec.setupWorker(self, crawlerUrl) { workerRouter =>
@@ -104,7 +108,7 @@ class DeadLinkSpec(_system: ActorSystem)
 
         workerRouter ! Work(crawlerUrl)
 
-        expectMsg(Work(crawlerUrl.nextUrl("http://localhost:8080/relativeUrl", redirects = Some(4))))
+        expectMsg(Work(crawlerUrl.nextUrl(SpecHelper.testDomain+"/relativeUrl", redirects = Some(4))))
 
         expectMsg(WorkItemDone)
         expectMsg(GimmeWork)
@@ -113,7 +117,7 @@ class DeadLinkSpec(_system: ActorSystem)
 
     "not schedule already crawled urls" in {
       val crawlerUrl = AbsoluteUrl(
-        uri = Uri("http://localhost:8080/redirectOnce")
+        uri = Uri(SpecHelper.testDomain+"/redirectOnce")
       )
 
       DeadLinkSpec.setupWorker(self, crawlerUrl) { workerRouter =>
@@ -121,7 +125,7 @@ class DeadLinkSpec(_system: ActorSystem)
 
         workerRouter ! Work(crawlerUrl)
 
-        expectMsg(Work(crawlerUrl.nextUrl("http://localhost:8080/relativeUrl", redirects = Some(4))))
+        expectMsg(Work(crawlerUrl.nextUrl(SpecHelper.testDomain+"/relativeUrl", redirects = Some(4))))
 
         expectMsg(WorkItemDone)
         expectMsg(GimmeWork)
@@ -136,7 +140,7 @@ class DeadLinkSpec(_system: ActorSystem)
     "handle infinite redirect (redirect limit reached)" in {
 
       val redirectCrawlerUrl = AbsoluteUrl(
-        uri = Uri("http://localhost:8080/redirectForever/1234"),
+        uri = Uri(SpecHelper.testDomain+"/redirectForever/1234"),
         redirectsLeft = Some(0)
       )
 
@@ -164,7 +168,7 @@ class DeadLinkSpec(_system: ActorSystem)
     "send links to be crawled to master" in {
 
       val crawlerUrl = AbsoluteUrl(
-        uri = Uri("http://localhost:8080/"),
+        uri = Uri(SpecHelper.testDomain+"/"),
         depth = 10)
 
       DeadLinkSpec.setupWorker(self, crawlerUrl) { workerRouter =>
@@ -172,14 +176,14 @@ class DeadLinkSpec(_system: ActorSystem)
 
         workerRouter ! Work(crawlerUrl)
 
-        expectMsg(Work(crawlerUrl.nextUrl("http://localhost:8080/relativeUrl")))
-        expectMsg(Work(crawlerUrl.nextUrl("http://localhost:8080/relativeUrlMissingSlash")))
-        expectMsg(Work(crawlerUrl.nextUrl("http://localhost:8080/")))
-        expectMsg(Work(crawlerUrl.nextUrl("http://localhost:8080/relativeUrl")))
-        expectMsg(Work(crawlerUrl.nextUrl("http://localhost:8080/redirectForever")))
-        expectMsg(Work(crawlerUrl.nextUrl("http://localhost:8080/redirectOnce")))
-        expectMsg(Work(crawlerUrl.nextUrl("http://localhost:8080/fullUri")))
-        expectMsg(Work(crawlerUrl.nextUrl("http://localhost:8080/nestedOnce")))
+        expectMsg(Work(crawlerUrl.nextUrl(SpecHelper.testDomain+"/relativeUrl")))
+        expectMsg(Work(crawlerUrl.nextUrl(SpecHelper.testDomain+"/relativeUrlMissingSlash")))
+        expectMsg(Work(crawlerUrl.nextUrl(SpecHelper.testDomain+"/")))
+        expectMsg(Work(crawlerUrl.nextUrl(SpecHelper.testDomain+"/relativeUrl")))
+        expectMsg(Work(crawlerUrl.nextUrl(SpecHelper.testDomain+"/redirectForever")))
+        expectMsg(Work(crawlerUrl.nextUrl(SpecHelper.testDomain+"/redirectOnce")))
+        expectMsg(Work(crawlerUrl.nextUrl(SpecHelper.testDomain+"/fullUri")))
+        expectMsg(Work(crawlerUrl.nextUrl(SpecHelper.testDomain+"/nestedOnce")))
 
         expectMsg(WorkItemDone)
         expectMsg(GimmeWork)
@@ -198,14 +202,14 @@ object DeadLinkSpec {
   def onUrlComplete(url: CrawlerUrl, response: Try[HttpResponse]) {
     response match {
       case Success(httpResponse) =>
-        play.Logger.info(s"url successfully fetched: ${url.uri.toString()}")
+        println(s"url successfully fetched: ${url.uri.toString()}")
       case Failure(error) =>
-        play.Logger.error(error.getMessage)
+        println("error:"+error.getMessage)
     }
   }
 
   def onNotCrawlable(url: CrawlerUrl, reason: Throwable) {
-    play.Logger.debug("NOT CRAWLABLE:"+reason.toString)
+    println("NOT CRAWLABLE:"+reason.toString)
   }
 
   def setupWorker[T](

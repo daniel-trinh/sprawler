@@ -2,7 +2,6 @@ import sbt._
 import Keys._
 import com.typesafe.sbt.SbtScalariform
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
-import com.tuplejump.sbt.yeoman.Yeoman
 import com.typesafe.sbt.SbtAtmos.{ Atmos, atmosSettings }
 
 object ApplicationBuild extends Build {
@@ -13,11 +12,15 @@ object ApplicationBuild extends Build {
   val appName         = "Scrawler"
   val appVersion      = "0.1.0"
 
-  val scalacVersion = "2.10.3"
-
-  val appDependencies = sprayDeps ++ akkaDeps ++ miscDeps ++ testDeps ++ crawlerDeps ++ Seq(
-    "org.scala-lang" % "scala-compiler" % scalacVersion
-  )
+  val appDependencies = sprayDeps ++
+    playDeps ++
+    akkaDeps ++
+    miscDeps ++
+    testDeps ++
+    crawlerDeps ++
+    Seq(
+      "org.scala-lang" % "scala-compiler" % V.Scala
+    )
 
   val appResolvers = Seq(
     jboss,
@@ -30,7 +33,8 @@ object ApplicationBuild extends Build {
 
   val scalacSettings = Seq(
     "-Dscalac.patmat.analysisBudget=off",
-    "-feature" 
+    "-feature"
+    // Uncomment this line to help find initialization order problems
     // "-Xcheckinit"
   )
 
@@ -38,26 +42,6 @@ object ApplicationBuild extends Build {
     id   = "async",
     base = file("../webcrawler/async")
   )
-
-  val main = play.Project(
-    appName, appVersion, appDependencies
-  )
-  .configs(Atmos)
-  .settings(
-    SbtScalariform.scalariformSettings ++
-      (resolvers ++= appResolvers) ++
-      (scalaVersion := scalacVersion) ++
-      (scalacOptions ++= scalacSettings) ++
-      (ScalariformKeys.preferences := formattingPreferences) ++
-      (initialCommands := PreRun.everything) ++
-      // Set alternate conf file in test mode
-      (javaOptions in Test += "-Dconfig.file=conf/test.conf") ++
-      // Add yeoman commands to sbt
-      Yeoman.yeomanSettings ++
-      // Add akka tracing tool
-      atmosSettings: _*
-  ) aggregate(async) dependsOn(async)
-
 
   val formattingPreferences = {
     import scalariform.formatter.preferences._
@@ -71,6 +55,34 @@ object ApplicationBuild extends Build {
       .setPreference(SpacesWithinPatternBinders, true)
       .setPreference(DoubleIndentClassDeclaration, true)
   }
+
+  lazy val standardSettings = Defaults.defaultSettings ++
+  SbtScalariform.scalariformSettings ++
+  Seq(
+    version                     := appVersion,
+    scalaVersion                := V.Scala,
+    organization                := "com.danieltrinh",
+    // This will run code in a forked JVM. Necessary to get javaOptions to run
+    fork                        := true,
+    ScalariformKeys.preferences := formattingPreferences,
+    libraryDependencies         ++= appDependencies,
+    resolvers                   ++= appResolvers,
+    javaOptions in Test         ++= Seq(
+      // Uncomment this line when there's problems loading .conf files
+      // "-Dconfig.trace=loads", 
+      "-Dconfig.resource=test.conf"),
+    scalacOptions               ++= scalacSettings
+  )
+  lazy val main = Project(
+    id       = appName,
+    base     = file("."),
+    settings = standardSettings
+  )
+  .configs(Atmos)
+  .settings(atmosSettings: _*)
+  .aggregate(async)
+  .dependsOn(async)
+
 }
 
 object Resolvers {
@@ -90,10 +102,9 @@ object Resolvers {
 
 object Dependencies {
   object V {
+    val Scala = "2.10.3"
     val Spray = "1.1-M8"
-    // val Akka  = "2.1.4"
     val Akka  = "2.2.1"
-    // val SprayNightly = "1.1-20130801"
     val SprayNightly = "1.2-20130912"
   }
 
@@ -103,7 +114,7 @@ object Dependencies {
 
   // Misc
   val miscDeps = Seq(
-    "com.typesafe"                    %  "config"           % "1.0.0",
+    "com.typesafe"                    %  "config"           % "1.0.2",
     "com.github.nscala-time"          %% "nscala-time"      % "0.6.0",
     "com.typesafe.atmos"              %  "trace-akka-2.1.4" % "1.2.1"
   )
@@ -142,6 +153,12 @@ object Dependencies {
     sprayCaching
   ) = sprayDeps
 
+  // Play
+  val playDeps = Seq(
+    "com.typesafe.play" %% "play-json" % "2.2.1"
+  )
+  val Seq(playJson) = playDeps
+
   // Testing dependencies
   val testDeps = Seq(
     "com.typesafe.akka" %% "akka-testkit"                % V.Akka         % "test",
@@ -177,14 +194,9 @@ object PreRun {
         |import biz.XmlParser
         |import biz.http.client.HttpCrawlerClient
         |import biz.config.CrawlerConfig
+        |import biz.config.SprayCanConfig
         |import biz.crawler.url._
         import crawlercommons.robots.{ BaseRobotRules, SimpleRobotRulesParser }
-      """.stripMargin
-    val play =
-      """
-        |import play.api.libs.concurrent.Execution.Implicits._
-        |import play.libs.Akka
-        |import play.core.StaticApplication
       """.stripMargin
 
     val scala =
@@ -205,17 +217,11 @@ object PreRun {
         |import HttpMethods._
       """.stripMargin
 
-    val imports = akka + webcrawler + play + scala + spray
+    val imports = akka + webcrawler + scala + spray
   }
 
   object Commands {
-    val playTestServer =  """ 
-      new StaticApplication(new java.io.File(".")) 
-    """
-    val akkaSystem = """ 
-      implicit val system = Akka.system 
-    """
-    val commands = playTestServer
+    val commands = ""
   }
 
   val includes =

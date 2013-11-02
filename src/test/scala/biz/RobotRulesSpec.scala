@@ -3,11 +3,10 @@ package biz
 import biz.config.CrawlerConfig
 import org.scalatest._
 import biz.http.client.RobotRules
-import play.core.StaticApplication
 
 // This spec should not be run by its own, instead it should be run indirectly through ServerDependentSpecs
 @DoNotDiscover
-class RobotRulesSpec extends WordSpec with ShouldMatchers with BeforeAndAfterAll with SpecHelper {
+class RobotRulesSpec extends WordSpec with ShouldMatchers with BeforeAndAfterAll {
 
   "RobotRules" when {
     def createDummyRule(robotsTxtContext: String) = {

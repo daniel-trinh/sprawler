@@ -98,7 +98,15 @@ trait HttpClientPipelines extends Throttler {
   def parseRobotRules(robotsTxtBody: Future[HttpResponse]): Future[BaseRobotRules] = {
     async {
       val response = await(robotsTxtBody)
-      RobotRules.create(domain, SprayCanConfig.Client.userAgent, response.entity.asString)
+
+      // Certain non robots formatted txt will cause "Allow All" to be false,
+      // so send an empty string whenever the response code isn't a 200 OK.
+      val robotsTxt = if (response.status.intValue == 200)
+        response.entity.asString
+      else
+        ""
+
+      RobotRules.create(domain, SprayCanConfig.Client.userAgent, robotsTxt)
     }
   }
 
@@ -124,7 +132,7 @@ trait HttpClientPipelines extends Throttler {
         val p = Promise[Boolean]()
         await(throttler) ! PromiseRequest(p)
         await(p.future)
-        play.Logger.debug(s"crawl delay rate: ${crawlDelayRate}")
+
         val result = await(sendReceiver(request))
         result
       } else {

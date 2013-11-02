@@ -1,6 +1,7 @@
 package biz
 
 import akka.actor.ActorSystem
+import akka.testkit.{ TestProbe, ImplicitSender, TestKit }
 
 import biz.config.CrawlerConfig
 import biz.CrawlerExceptions._
@@ -23,12 +24,23 @@ import spray.http.Uri
 
 // This spec should not be run by its own, instead it should be run indirectly through ServerDependentSpecs
 @DoNotDiscover
-class HttpCrawlerClientSpec
-    extends WordSpec
+class HttpCrawlerClientSpec(_system: ActorSystem)
+    extends TestKit(_system)
+    with WordSpec
     with BeforeAndAfter
+    with BeforeAndAfterAll
     with ShouldMatchers
     with PrivateMethodTester
     with SpecHelper {
+
+  override def beforeAll {
+    DummyTestServer.startTestServer()
+  }
+  override def afterAll {
+    DummyTestServer.shutdownTestServer(system)
+  }
+
+  def this() = this(ActorSystem("CrawlerSystem"))
 
   "HttpCrawlerClient" when {
     ".get(path)" should {
@@ -54,7 +66,7 @@ class HttpCrawlerClientSpec
       }
       "handle timeouts" in {
         localHttpTest { client =>
-          val request = client.get("/test/timeout")
+          val request = client.get("/timeout")
 
           val timeout = ClientConnectionSettings(system).requestTimeout.length.longValue()
           val retries = HostConnectorSettings(system).maxRetries.longValue()
@@ -65,7 +77,7 @@ class HttpCrawlerClientSpec
           result.isFailure should be === true
           result match {
             case p @ Failure(x) =>
-              x.toString should be === "spray.can.Http$RequestTimeoutException: GET request to /test/timeout timed out"
+              x.toString should be === "spray.can.Http$RequestTimeoutException: GET request to /timeout timed out"
           }
         }
       }
@@ -103,20 +115,20 @@ class HttpCrawlerClientSpec
       }
       "handle 400s" in {
         localHttpTest { client =>
-          val request = client.get("/test/notFound")
+          val request = client.get("/notFound")
           val result = Await.result(request, 5.seconds)
         }
       }
       "handle 300s" in {
         localHttpTest { client =>
-          val request = client.get("/test/redirect")
+          val request = client.get("/redirectOnce")
           val result = Await.result(request, 5.seconds)
           result.status.value should be === "301 Moved Permanently"
         }
       }
       "handle 500s" in {
         localHttpTest { client =>
-          val request = client.get("/test/internalError")
+          val request = client.get("/internalError")
           val result = Await.result(request, 5.seconds)
           result.status.value should be === "500 Internal Server Error"
         }
@@ -124,7 +136,6 @@ class HttpCrawlerClientSpec
     }
 
     ".get(path, pipe)" should {
-
       "work" in {
         localHttpTest { client =>
           val request = client.get("/", client.bodyOnlyPipeline)
@@ -147,6 +158,8 @@ class HttpCrawlerClientSpec
           val request = client.get("/fakepath/robots.txt", client.fetchRobotRules)
           val rules = Await.result(request, 5.seconds)
           rules.getCrawlDelay should be === CrawlerConfig.defaultCrawlDelay
+
+          Await.result(client.get("/fakepath/robots.txt"), 5.seconds)
           rules.isAllowAll should be === true
         }
       }

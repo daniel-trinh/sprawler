@@ -1,4 +1,5 @@
 package biz.crawler
+
 import java.util.concurrent.ConcurrentHashMap
 
 /**
