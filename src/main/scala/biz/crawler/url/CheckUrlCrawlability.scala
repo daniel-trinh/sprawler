@@ -1,6 +1,6 @@
 package biz.crawler.url
 
-import biz.crawler.{ CrawlerSession, CrawlerAgents }
+import biz.crawler.CrawlerSession
 import biz.CrawlerExceptions.{ UnprocessableUrlException, RedirectLimitReachedException }
 
 import scala.util.{ Success, Failure, Try }

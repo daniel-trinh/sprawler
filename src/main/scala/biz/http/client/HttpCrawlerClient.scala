@@ -6,7 +6,7 @@ import akka.contrib.throttle.Throttler._
 
 import biz.CrawlerExceptions._
 import biz.XmlParser
-import biz.config.CrawlerConfig
+import biz.config._
 import crawlercommons.robots.{ BaseRobotRules, SimpleRobotRulesParser }
 
 import scala.concurrent.{ Promise, Future }
@@ -30,7 +30,9 @@ import akka.contrib.throttle.Throttler.Rate
  * }}}
  * @param uri The base URI that contains the hostname of the domain to crawl.
  */
-case class HttpCrawlerClient(uri: Uri)(implicit val system: ActorSystem) extends HttpClientPipelines {
+case class HttpCrawlerClient(
+    val uri: Uri,
+    val crawlerConfig: CrawlerConfig = DefaultCrawlerConfig)(implicit val system: ActorSystem) extends HttpClientPipelines {
 
   val baseDomain = s"${uri.scheme}://${uri.authority.host.address}"
   val port = uri.authority.port
@@ -108,6 +110,7 @@ case class HttpCrawlerClient(uri: Uri)(implicit val system: ActorSystem) extends
 
   /**
    * Retrieves the [[crawlercommons.robots.BaseRobotRules]] from this [[biz.http.client.HttpCrawlerClient]]'s domain.
+   * Stores info about crawl delay rate, which urls are allowed, and sitemap information.
    */
   val robotRules: Future[BaseRobotRules] = {
     fetchRules
@@ -126,7 +129,7 @@ case class HttpCrawlerClient(uri: Uri)(implicit val system: ActorSystem) extends
 
     attemptRate.recoverWith {
       case e: RuntimeException =>
-        Future.successful(1 msgsPer CrawlerConfig.defaultCrawlDelay.milliseconds)
+        Future.successful(1 msgsPer crawlerConfig.crawlDelay.milliseconds)
     }
 
   }
@@ -145,7 +148,11 @@ object RobotRules {
    * @param robotsTxtContent the contents of the robots.txt file
    * @return [[crawlercommons.robots.BaseRobotRules]]
    */
-  def create(domain: String, crawlerName: String, robotsTxtContent: String): BaseRobotRules = {
+  def create(
+    domain: String,
+    crawlerName: String,
+    robotsTxtContent: String,
+    crawlerConfig: CrawlerConfig = DefaultCrawlerConfig): BaseRobotRules = {
     val robotParser = new SimpleRobotRulesParser()
     // Not actually immutable due to setter and getter functions
     val rules = robotParser.parseContent(domain, robotsTxtContent.getBytes, "text/plain", crawlerName)
@@ -156,7 +163,7 @@ object RobotRules {
     // number when encountering invalid input, so overwrite it with the crawler's default delay.
     // Invalid inputs include super huge values, negative values, and values that are not numbers
     if (delay < 0 || delay == Long.MinValue) {
-      rules.setCrawlDelay(CrawlerConfig.defaultCrawlDelay)
+      rules.setCrawlDelay(crawlerConfig.crawlDelay)
     }
 
     rules

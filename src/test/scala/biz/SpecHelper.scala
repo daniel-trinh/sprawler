@@ -4,7 +4,8 @@ import akka.contrib.throttle.Throttler.Rate
 import akka.actor.ActorSystem
 
 import biz.http.client.{ PromiseRequest, Throttler, HttpCrawlerClient }
-import biz.crawler.CrawlerAgents
+import biz.crawler.CrawlerSession
+import biz.config._
 
 import scala.collection.mutable
 import org.scalatest._
@@ -27,20 +28,18 @@ trait SpecHelper {
    * @param port The port to run the server on.
    * @tparam T Return type of the code that gets executed with f. Can be Unit.
    */
-  def localHttpTest[T](f: HttpCrawlerClient => T, port: Int = SpecHelper.port): T = {
+  def localHttpTest[T](crawlerConfig: CrawlerConfig = DefaultCrawlerConfig)(f: HttpCrawlerClient => T, port: Int = SpecHelper.port): T = {
     startAndExecuteServer(port) {
-      executeWithinClient(f, port)
+      executeWithinClient(crawlerConfig, f, port)
     }
   }
 
-  private def executeWithinClient[T](f: HttpCrawlerClient => T, port: Int = SpecHelper.port): T = {
+  private def executeWithinClient[T](crawlerConfig: CrawlerConfig, f: HttpCrawlerClient => T, port: Int = SpecHelper.port): T = {
     val uri = Uri(s"http://localhost:$port")
-    val client = CrawlerAgents.retrieveClient(
-      uri = uri
-    )
-    // This would normally be bad code because of the blocking Await, but this is only supposed
-    // to be used for specs.
-    f(Await.result(client, 5.seconds))
+
+    val client = HttpCrawlerClient(uri, crawlerConfig)
+
+    f(client)
   }
 
   private def printUri(uri: Uri) {

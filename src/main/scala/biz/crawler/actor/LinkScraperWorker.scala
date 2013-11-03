@@ -2,7 +2,7 @@ package biz.crawler.actor
 
 import biz.concurrency.FutureImplicits._
 import biz.config.CrawlerConfig
-import biz.crawler.CrawlerAgents._
+import biz.crawler.CrawlerSession._
 import biz.crawler.url.CrawlerUrl
 import biz.XmlParser
 import biz.CrawlerExceptions.{ RedirectLimitReachedException, MissingRedirectUrlException }
@@ -89,12 +89,13 @@ class LinkScraperWorker(
         }
         response
       } else if (isRedirect(status)) {
-        url.redirectsLeft match {
-          case Some(redirectNum) =>
-            await(followRedirect(url, response, redirectNum))
-          case None =>
-            await(followRedirect(url, response, CrawlerConfig.maxRedirects))
-        }
+        val redirectsLeft = url.redirectsLeft.getOrElse(client.crawlerConfig.maxRedirects)
+        await(followRedirect(
+          url,
+          response,
+          redirectsLeft,
+          client.crawlerConfig.maxRedirects)
+        )
       } else {
         response
       }
@@ -137,6 +138,7 @@ class LinkScraperWorker(
   private def followRedirect(
     url: CrawlerUrl,
     response: HttpResponse,
+    maxRedirects: Int,
     redirectsLeft: Int): Future[HttpResponse] = {
 
     require(isRedirect(response.status.intValue))

@@ -101,8 +101,7 @@ object DummyTestServer extends SimpleRoutingApp {
     path("robots.txt") {
       get {
         complete {
-          """|User-agent: *
-           |Crawl-delay: 1""".stripMargin
+          """|User-agent: *""".stripMargin
         }
       }
     } ~
@@ -149,18 +148,18 @@ object DummyTestServer extends SimpleRoutingApp {
         aPromise.future.map { i => "hello world:"+i }
         complete(aPromise.future)
       }
-    }
-  path("fullUri") {
-    get {
-      complete {
-        <html>
-          <body>
-            fullUri
-          </body>
-        </html>
+    } ~
+    path("fullUri") {
+      get {
+        complete {
+          <html>
+            <body>
+              fullUri
+            </body>
+          </html>
+        }
       }
-    }
-  } ~
+    } ~
     path("nestedOnce") {
       get {
         complete {

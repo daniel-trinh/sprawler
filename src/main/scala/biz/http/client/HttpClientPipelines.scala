@@ -3,7 +3,7 @@ package biz.http.client
 import akka.actor.{ ActorSystem, Status, ActorRef }
 import akka.spray.{ UnregisteredActorRef, RefUtils }
 
-import biz.config.SprayCanConfig
+import biz.config._
 import biz.CrawlerExceptions.{ UrlNotAllowedException, FailedHttpRequestException }
 import biz.concurrency.FutureImplicits._
 import biz.http.client._
@@ -30,7 +30,7 @@ trait HttpClientPipelines extends Throttler {
    * }}}
    */
   def domain: String
-
+  def crawlerConfig: CrawlerConfig
   val robotRules: Future[BaseRobotRules]
 
   /**
@@ -106,7 +106,7 @@ trait HttpClientPipelines extends Throttler {
       else
         ""
 
-      RobotRules.create(domain, SprayCanConfig.Client.userAgent, robotsTxt)
+      RobotRules.create(domain, SprayCanConfig.Client.userAgent, robotsTxt, crawlerConfig)
     }
   }
 

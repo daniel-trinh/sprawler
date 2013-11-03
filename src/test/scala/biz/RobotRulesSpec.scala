@@ -1,8 +1,9 @@
 package biz
 
 import biz.config.CrawlerConfig
-import org.scalatest._
 import biz.http.client.RobotRules
+
+import org.scalatest._
 
 // This spec should not be run by its own, instead it should be run indirectly through ServerDependentSpecs
 @DoNotDiscover

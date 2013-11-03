@@ -10,7 +10,7 @@ object ApplicationBuild extends Build {
   import Resolvers._
 
   val appName         = "Scrawler"
-  val appVersion      = "0.1.0"
+  val appVersion      = "0.2.0"
 
   val appDependencies = sprayDeps ++
     playDeps ++
