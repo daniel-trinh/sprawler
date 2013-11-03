@@ -65,7 +65,7 @@ class HttpCrawlerClientSpec(_system: ActorSystem)
         res should be === Failure(UrlNotAllowedException("https://github.com", "/", UrlNotAllowedException.RobotRuleDisallowed))
       }
       "handle timeouts" in {
-        val conf = CustomCrawlerConfig(crawlDelay = 50)
+        val conf = CustomCrawlerConfig(crawlDelay = 50.milliseconds)
 
         localHttpTest(conf) { client =>
           val request = client.get("/timeout")
@@ -84,7 +84,7 @@ class HttpCrawlerClientSpec(_system: ActorSystem)
         }
       }
       "throttle requests to the same domain" in {
-        val conf = CustomCrawlerConfig(crawlDelay = 100)
+        val conf = CustomCrawlerConfig(crawlDelay = 100.milliseconds)
         localHttpTest(conf) { client =>
           val requestList = List(
             client.get("/robots.txt"),
@@ -94,13 +94,13 @@ class HttpCrawlerClientSpec(_system: ActorSystem)
           )
           val requests = Future.sequence(requestList)
           val timeout = intercept[java.util.concurrent.TimeoutException] {
-            val result = Await.result(requests, client.crawlerConfig.crawlDelay.milliseconds)
+            val result = Await.result(requests, client.crawlerConfig.crawlDelay)
           }
-          timeout.getMessage should be === s"Futures timed out after [${client.crawlerConfig.crawlDelay} milliseconds]"
+          timeout.getMessage should be === s"Futures timed out after [${client.crawlerConfig.crawlDelay}]"
         }
       }
       "not throttle requests to different domains" in {
-        val conf = CustomCrawlerConfig(crawlDelay = 1000)
+        val conf = CustomCrawlerConfig(crawlDelay = 1000.milliseconds)
         localHttpTest(conf) { client =>
           val requestList = List(
             HttpCrawlerClient("https://www.github.com").get("/robots.txt"),
@@ -110,7 +110,7 @@ class HttpCrawlerClientSpec(_system: ActorSystem)
 
           val requests = Future.sequence(requestList)
           // might fail if any of the requests take longer than 2 * crawlDelay
-          val results = Await.result(requests, client.crawlerConfig.crawlDelay.milliseconds * 2)
+          val results = Await.result(requests, client.crawlerConfig.crawlDelay * 2)
 
           results.foreach { res =>
             res.status.isSuccess should be === true
@@ -118,14 +118,14 @@ class HttpCrawlerClientSpec(_system: ActorSystem)
         }
       }
       "handle 400s" in {
-        val conf = CustomCrawlerConfig(crawlDelay = 0)
+        val conf = CustomCrawlerConfig(crawlDelay = 0.milliseconds)
         localHttpTest() { client =>
           val request = client.get("/notFound")
           val result = Await.result(request, 5.seconds)
         }
       }
       "handle 300s" in {
-        val conf = CustomCrawlerConfig(crawlDelay = 0)
+        val conf = CustomCrawlerConfig(crawlDelay = 0.milliseconds)
         localHttpTest() { client =>
           val request = client.get("/redirectOnce")
           val result = Await.result(request, 5.seconds)
@@ -133,7 +133,7 @@ class HttpCrawlerClientSpec(_system: ActorSystem)
         }
       }
       "handle 500s" in {
-        val conf = CustomCrawlerConfig(crawlDelay = 0)
+        val conf = CustomCrawlerConfig(crawlDelay = 0.milliseconds)
         localHttpTest() { client =>
           val request = client.get("/internalError")
           val result = Await.result(request, 5.seconds)
@@ -144,7 +144,7 @@ class HttpCrawlerClientSpec(_system: ActorSystem)
 
     ".get(path, pipe)" should {
       "work" in {
-        val conf = CustomCrawlerConfig(crawlDelay = 0)
+        val conf = CustomCrawlerConfig(crawlDelay = 0.milliseconds)
         localHttpTest() { client =>
           val request = client.get("/", client.bodyOnlyPipeline)
           val res = Await.result(request, 5.seconds)
@@ -155,7 +155,7 @@ class HttpCrawlerClientSpec(_system: ActorSystem)
 
     ".fetchRobotRules" should {
       "properly fetch a site with robots.txt" in {
-        val conf = CustomCrawlerConfig(crawlDelay = 0)
+        val conf = CustomCrawlerConfig(crawlDelay = 0.milliseconds)
         localHttpTest(conf) { client =>
           val request = client.robotRules
           val rules = Await.result(request, 5.seconds)
@@ -163,11 +163,11 @@ class HttpCrawlerClientSpec(_system: ActorSystem)
         }
       }
       "gracefully fail when trying to fetch a site without robots.txt" in {
-        val conf = CustomCrawlerConfig(crawlDelay = 0)
+        val conf = CustomCrawlerConfig(crawlDelay = 0.milliseconds)
         localHttpTest() { client =>
           val request = client.get("/fakepath/robots.txt", client.fetchRobotRules)
           val rules = Await.result(request, 5.seconds)
-          rules.getCrawlDelay should be === client.crawlerConfig.crawlDelay
+          rules.getCrawlDelay.milliseconds should be === client.crawlerConfig.crawlDelay
 
           Await.result(client.get("/fakepath/robots.txt"), 5.seconds)
           rules.isAllowAll should be === true

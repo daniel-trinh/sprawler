@@ -123,13 +123,13 @@ case class HttpCrawlerClient(
   val crawlDelayRate: Future[Rate] = {
     val attemptRate = async {
       val rules = await(robotRules)
-      val delay = rules.getCrawlDelay
-      1 msgsPer delay.milliseconds
+      val delayDuration = rules.getCrawlDelay
+      1 msgsPer delayDuration.milliseconds
     }
 
     attemptRate.recoverWith {
       case e: RuntimeException =>
-        Future.successful(1 msgsPer crawlerConfig.crawlDelay.milliseconds)
+        Future.successful(1 msgsPer crawlerConfig.crawlDelay)
     }
 
   }
@@ -163,7 +163,7 @@ object RobotRules {
     // number when encountering invalid input, so overwrite it with the crawler's default delay.
     // Invalid inputs include super huge values, negative values, and values that are not numbers
     if (delay < 0 || delay == Long.MinValue) {
-      rules.setCrawlDelay(crawlerConfig.crawlDelay)
+      rules.setCrawlDelay(crawlerConfig.crawlDelay.toMillis)
     }
 
     rules
