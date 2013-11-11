@@ -40,7 +40,7 @@ object ApplicationBuild extends Build {
 
   lazy val async = Project(
     id   = "async",
-    base = file("../webcrawler/async")
+    base = file("async")
   )
 
   val formattingPreferences = {
