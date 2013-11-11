@@ -43,8 +43,6 @@ object ApplicationBuild extends Build {
     base = file("../webcrawler/async")
   )
 
-  lazy val async = Project
-
   val formattingPreferences = {
     import scalariform.formatter.preferences._
     FormattingPreferences()
