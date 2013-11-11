@@ -1,6 +1,7 @@
 ### Todo
 
-#### Priority 0 (higher is more important)
+#### Priority 0 (smaller is more important)
++ move this into github's tracking system 
 
 + refactor webcrawler code into separate library
   * refactor/rename all packages to something more specific from "biz"
@@ -25,7 +26,15 @@
 
 + Needs testing: make sure correct exceptions are serialized in certain circumstances
 
-+ Tweak test.conf settings and add code overrides to get specs to run faster
++ Add more persistence options for visited url storage, add option for 
++ global state, redis, etc
+
++ Add bloom filter implementation for visited urls
+
++ Add Dependency Injection in visited urls algorithm
+
++ Add support for parsing <META NAME="ROBOTS" CONTENT="NOINDEX, NOFOLLOW, NONE">
+http://googlewebmastercentral.blogspot.com/2007/03/using-robots-meta-tag.html
 
 #### Priority 3
 + fix compiler warnings
@@ -38,7 +47,3 @@
 
 ### Build Status
 [![Build Status](https://travis-ci.org/daniel-trinh/webcrawler.png?branch=wip)](https://travis-ci.org/daniel-trinh/webcrawler)
-
-
-Total lines added: 9905
-Total lines removed: 4751

@@ -22,7 +22,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import spray.http.{ HttpResponse, Uri }
 import spray.can.Http
 
-class DeadLinkSpec(_system: ActorSystem)
+class LinkActorsSpec(_system: ActorSystem)
     extends TestKit(_system)
     with ImplicitSender
     with WordSpec
@@ -30,10 +30,10 @@ class DeadLinkSpec(_system: ActorSystem)
     with BeforeAndAfterAll
     with ShouldMatchers {
 
-  override def beforeAll {
+  override def beforeAll() {
     DummyTestServer.startTestServer()
   }
-  override def afterAll {
+  override def afterAll() {
     DummyTestServer.shutdownTestServer(system)
   }
 
@@ -45,13 +45,13 @@ class DeadLinkSpec(_system: ActorSystem)
     )
 
     "schedule initial link to be crawled to workers" in {
-      DeadLinkSpec.setupMaster(self, crawlerUrl) { master =>
+      LinkActorsSpec.setupMaster(self, crawlerUrl) { master =>
         expectMsg(WorkAvailable)
       }
     }
     "send work to worker on GimmeWork msg" in {
 
-      DeadLinkSpec.setupMaster(self, crawlerUrl) { master =>
+      LinkActorsSpec.setupMaster(self, crawlerUrl) { master =>
         expectMsg(WorkAvailable)
 
         master ! GimmeWork
@@ -60,7 +60,7 @@ class DeadLinkSpec(_system: ActorSystem)
       }
     }
     "should enqueue urls for more crawling" in {
-      DeadLinkSpec.setupMaster(self, crawlerUrl) { master =>
+      LinkActorsSpec.setupMaster(self, crawlerUrl) { master =>
         expectMsg(WorkAvailable)
         master ! GimmeWork
         expectMsg(Work(crawlerUrl))
@@ -77,7 +77,7 @@ class DeadLinkSpec(_system: ActorSystem)
       }
     }
     "should shutdown self and workers when no work is left" in {
-      DeadLinkSpec.setupMaster(self, crawlerUrl) { master =>
+      LinkActorsSpec.setupMaster(self, crawlerUrl) { master =>
         expectMsg(WorkAvailable)
 
         master ! GimmeWork
@@ -103,7 +103,7 @@ class DeadLinkSpec(_system: ActorSystem)
         uri = Uri(SpecHelper.testDomain+"/redirectOnce")
       )
 
-      DeadLinkSpec.setupWorker(self, crawlerUrl) { workerRouter =>
+      LinkActorsSpec.setupWorker(self, crawlerUrl) { workerRouter =>
         expectMsg(GimmeWork)
 
         workerRouter ! Work(crawlerUrl)
@@ -120,7 +120,7 @@ class DeadLinkSpec(_system: ActorSystem)
         uri = Uri(SpecHelper.testDomain+"/redirectOnce")
       )
 
-      DeadLinkSpec.setupWorker(self, crawlerUrl) { workerRouter =>
+      LinkActorsSpec.setupWorker(self, crawlerUrl) { workerRouter =>
         expectMsg(GimmeWork)
 
         workerRouter ! Work(crawlerUrl)
@@ -150,7 +150,7 @@ class DeadLinkSpec(_system: ActorSystem)
         uncrawlableLinks += url
       }
 
-      DeadLinkSpec.setupWorker(self, redirectCrawlerUrl, onNotCrawlable = onNotCrawlable) { workerRouter =>
+      LinkActorsSpec.setupWorker(self, redirectCrawlerUrl, onNotCrawlable = onNotCrawlable) { workerRouter =>
         expectMsg(GimmeWork)
 
         workerRouter ! Work(redirectCrawlerUrl)
@@ -171,7 +171,7 @@ class DeadLinkSpec(_system: ActorSystem)
         uri = Uri(SpecHelper.testDomain+"/"),
         depth = 10)
 
-      DeadLinkSpec.setupWorker(self, crawlerUrl) { workerRouter =>
+      LinkActorsSpec.setupWorker(self, crawlerUrl) { workerRouter =>
         expectMsg(GimmeWork)
 
         workerRouter ! Work(crawlerUrl)
@@ -194,7 +194,7 @@ class DeadLinkSpec(_system: ActorSystem)
   }
 }
 
-object DeadLinkSpec {
+object LinkActorsSpec {
 
   val resizer = DefaultResizer(lowerBound = 1, upperBound = 10)
   val router = SmallestMailboxRouter(nrOfInstances = 1, resizer = Some(resizer))

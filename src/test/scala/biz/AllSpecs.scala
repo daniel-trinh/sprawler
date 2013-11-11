@@ -1,6 +1,6 @@
 package biz
 
-import biz.actors.DeadLinkSpec
+import biz.actors.LinkActorsSpec
 import org.scalatest._
 
 /**
@@ -9,7 +9,7 @@ import org.scalatest._
  * and @DoNotDiscover annotation works with ~ test-only.
  */
 class AllSpecs extends Specs(
-  new DeadLinkSpec,
+  new LinkActorsSpec,
   new HttpCrawlerClientSpec,
   new RobotRulesSpec,
   new ThrottlerSpec,

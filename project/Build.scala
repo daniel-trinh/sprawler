@@ -9,7 +9,7 @@ object ApplicationBuild extends Build {
   import Dependencies._
   import Resolvers._
 
-  val appName         = "Scrawler"
+  val appName         = "Sprawler"
   val appVersion      = "0.2.0"
 
   val appDependencies = sprayDeps ++
@@ -42,6 +42,8 @@ object ApplicationBuild extends Build {
     id   = "async",
     base = file("../webcrawler/async")
   )
+
+  lazy val async = Project
 
   val formattingPreferences = {
     import scalariform.formatter.preferences._
