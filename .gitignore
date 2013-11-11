@@ -4,6 +4,9 @@
 *.log
 logs
 
+# temporarily hide all angular.js code
+ui/*
+
 # sbt specific
 dist/*
 target/
