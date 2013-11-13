@@ -5,8 +5,6 @@ import biz.http.client.RobotRules
 
 import org.scalatest._
 
-// This spec should not be run by its own, instead it should be run indirectly through ServerDependentSpecs
-@DoNotDiscover
 class RobotRulesSpec extends WordSpec with ShouldMatchers with BeforeAndAfterAll {
 
   "RobotRules" when {

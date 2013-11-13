@@ -22,11 +22,9 @@ import spray.can.client.ClientConnectionSettings
 
 import spray.http.Uri
 
-// This spec should not be run by its own, instead it should be run indirectly through ServerDependentSpecs
-@DoNotDiscover
 class HttpCrawlerClientSpec(_system: ActorSystem)
     extends TestKit(_system)
-    with WordSpec
+    with WordSpecLike
     with BeforeAndAfter
     with BeforeAndAfterAll
     with ShouldMatchers

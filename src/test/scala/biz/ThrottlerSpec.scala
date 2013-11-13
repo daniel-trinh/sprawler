@@ -13,10 +13,8 @@ import scala.concurrent.{ Await, Promise, Future }
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
-// This spec should not be run by its own, instead it should be run indirectly through ServerDependentSpecs
-@DoNotDiscover
 class ThrottlerSpec(_system: ActorSystem) extends TestKit(_system)
-    with WordSpec
+    with WordSpecLike
     with ShouldMatchers
     with BeforeAndAfter
     with BeforeAndAfterAll

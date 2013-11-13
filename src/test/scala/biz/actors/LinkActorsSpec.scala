@@ -10,7 +10,7 @@ import biz.crawler.actor.WorkPullingPattern._
 import biz.crawler.url.{ CrawlerUrl, AbsoluteUrl }
 import biz.SpecHelper
 
-import org.scalatest.{ ShouldMatchers, WordSpec, BeforeAndAfter, BeforeAndAfterAll }
+import org.scalatest.{ WordSpecLike, ShouldMatchers, BeforeAndAfter, BeforeAndAfterAll }
 
 import scala.collection.mutable
 import scala.concurrent.Await
@@ -25,7 +25,7 @@ import spray.can.Http
 class LinkActorsSpec(_system: ActorSystem)
     extends TestKit(_system)
     with ImplicitSender
-    with WordSpec
+    with WordSpecLike
     with BeforeAndAfter
     with BeforeAndAfterAll
     with ShouldMatchers {

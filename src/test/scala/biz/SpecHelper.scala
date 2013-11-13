@@ -67,7 +67,7 @@ object SpecHelper {
    */
   val testDomain = s"http://localhost:$port"
 
-  trait DummyThrottler extends Throttler with WordSpec with ShouldMatchers {
+  trait DummyThrottler extends Throttler with WordSpecLike with ShouldMatchers {
     implicit val system: ActorSystem
 
     val crawlDelayRate = Future.successful(Rate(1, 1.second))

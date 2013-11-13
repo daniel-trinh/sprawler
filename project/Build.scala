@@ -1,5 +1,6 @@
 import sbt._
 import Keys._
+import com.tuplejump.sbt.yeoman.Yeoman
 import com.typesafe.sbt.SbtScalariform
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 import com.typesafe.sbt.SbtAtmos.{ Atmos, atmosSettings }
@@ -38,11 +39,6 @@ object ApplicationBuild extends Build {
     // "-Xcheckinit"
   )
 
-  lazy val async = Project(
-    id   = "async",
-    base = file("async")
-  )
-
   val formattingPreferences = {
     import scalariform.formatter.preferences._
     FormattingPreferences()
@@ -73,16 +69,27 @@ object ApplicationBuild extends Build {
       "-Dconfig.resource=test.conf"),
     scalacOptions               ++= scalacSettings
   )
-  lazy val main = Project(
+
+  val sprawler = Project(
     id       = appName,
     base     = file("."),
     settings = standardSettings
   )
   .configs(Atmos)
   .settings(atmosSettings: _*)
-  .aggregate(async)
-  .dependsOn(async)
 
+
+  val deadLinksDemo = play.Project(
+    appName + "DeadLinksDemo", 
+    "0.1.0", 
+    path = file("examples/deadLinks")
+  ).settings(
+    Yeoman.yeomanSettings: _*
+  ).dependsOn(
+    sprawler
+  ).aggregate(
+    sprawler
+  )
 }
 
 object Resolvers {
@@ -116,9 +123,10 @@ object Dependencies {
   val miscDeps = Seq(
     "com.typesafe"                    %  "config"           % "1.0.2",
     "com.github.nscala-time"          %% "nscala-time"      % "0.6.0",
-    "com.typesafe.atmos"              %  "trace-akka-2.1.4" % "1.2.1"
+    "com.typesafe.atmos"              %  "trace-akka-2.1.4" % "1.2.1",
+    "org.scala-lang.modules"          %% "scala-async"      % "0.9.0-M2"
   )
-  val Seq(typesafeConfig, nscalaTime, akkaTrace) = miscDeps
+  val Seq(typesafeConfig, nscalaTime, akkaTrace, scalaAsync) = miscDeps
 
   // Webcrawler related dependencies
   val crawlerDeps = Seq(
@@ -162,7 +170,7 @@ object Dependencies {
   // Testing dependencies
   val testDeps = Seq(
     "com.typesafe.akka" %% "akka-testkit"                % V.Akka         % "test",
-    "org.scalatest"     %  "scalatest_2.10"              % "2.0.M5b"      % "test",
+    "org.scalatest"     %  "scalatest_2.10"              % "2.0"          % "test",
     "org.scalamock"     %% "scalamock-scalatest-support" % "3.0.1"        % "test",
     // Used to start a bare bones server for testing the crawler
     "io.spray"          %  "spray-routing"               % V.SprayNightly % "test"
