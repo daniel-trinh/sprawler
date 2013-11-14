@@ -1,0 +1,19 @@
+<div class="hero-unit">
+  <div ng-controller="EggheadtutorialCtrl">
+  	<input type="text" ng-model="data.message">
+  	<h3>{{data.message}}</h3>
+  </div>
+  <div ng-controller="SecondCtrl">
+  	<input type="text" ng-model="data.message">
+  	<h3>{{data.message|reverse}}</h3>
+  </div>
+  <div ng-controller="AvengersCtrl">
+    <table>
+      <input type="text" ng-model="search.name">
+      <tr ng-repeat="actor in avengers.cast | orderBy:'-name'">
+        <td>Name:{{actor.name}}</td>
+        <td>Character:{{actor.character}}</td>
+      </tr>
+    </table>
+  </div> 
+</div>

@@ -81,7 +81,8 @@ object ApplicationBuild extends Build {
 
   val deadLinksDemo = play.Project(
     appName + "DeadLinksDemo", 
-    "0.1.0", 
+    "0.1.0",
+    appDependencies,
     path = file("examples/deadLinks")
   ).settings(
     Yeoman.yeomanSettings: _*
@@ -197,13 +198,13 @@ object PreRun {
 
     val webcrawler =
       """
-        |import biz._
-        |import biz.CrawlerExceptions._
-        |import biz.XmlParser
-        |import biz.http.client.HttpCrawlerClient
-        |import biz.config.CrawlerConfig
-        |import biz.config.SprayCanConfig
-        |import biz.crawler.url._
+        |import sprawler._
+        |import sprawler.CrawlerExceptions._
+        |import sprawler.XmlParser
+        |import sprawler.http.client.HttpCrawlerClient
+        |import sprawler.config.CrawlerConfig
+        |import sprawler.config.SprayCanConfig
+        |import sprawler.crawler.url._
         import crawlercommons.robots.{ BaseRobotRules, SimpleRobotRulesParser }
       """.stripMargin
 

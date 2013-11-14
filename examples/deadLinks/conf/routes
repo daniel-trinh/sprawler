@@ -1,0 +1,18 @@
+# Routes
+# This file defines all application routes (Higher priority routes first)
+# ~~~~
+
+# Web crawling code
+GET     /deadLinks                  controllers.LinkCrawler.deadLinks(url: String)
+GET     /api/deadLinks              controllers.LinkCrawler.deadLinksSSE(url: String)
+
+# Robots.txt
+GET     /robots.txt                 controllers.Assets.at(path="/public", file="robots.txt")
+
+# Map static resources from the /public folder to the /assets URL path
+GET     /assets/*file               controllers.Assets.at(path="/public", file)
+
+# Yeoman Routes
+GET     /ui                     	com.tuplejump.playYeoman.Yeoman.index
+->      /ui/                    	yeoman.Routes
+GET     /                       	com.tuplejump.playYeoman.Yeoman.redirectRoot(base="/ui/")

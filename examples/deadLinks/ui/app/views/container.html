@@ -1,0 +1,13 @@
+<clock timezone="MST">
+</clock>
+<br> <br> <br>
+<panel title="I'm a title">
+  <div 
+  class     = "btn" 
+  ng-click  = "$log.log($event)" 
+  ng-repeat = "item in 'somewords'.split('')">
+    {{$index + 1}}. {{item}}
+  </div>
+  <clock timezone="PST">
+  </clock>
+</panel>
