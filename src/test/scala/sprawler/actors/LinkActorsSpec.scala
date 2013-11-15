@@ -233,7 +233,7 @@ object LinkActorsSpec {
   def setupMaster[T](workerRef: ActorRef, url: CrawlerUrl)(f: ActorRef => T)(implicit system: ActorSystem): T = {
     val masterProps = Props(classOf[LinkQueueMaster], List(url))
     val master = system.actorOf(masterProps)
-    master ! RegisterWorkers(workerRef)
+    master ! RegisterWorkerRouter(workerRef)
 
     f(master)
   }

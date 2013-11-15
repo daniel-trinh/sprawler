@@ -25,7 +25,7 @@ object LinkCrawler extends Controller {
     // TODO: fix data race problem with actor starting crawling before enumerator is received
     val iteratee = Iteratee.foreach[JsValue] { event =>
       play.Logger.info(s"received: $event")
-    }.mapDone { event =>
+    }.map { event =>
       play.Logger.info(s"end: $event")
     }
     val crawler = new CrawlerStarter(url)

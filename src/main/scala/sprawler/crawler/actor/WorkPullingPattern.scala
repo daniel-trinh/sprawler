@@ -39,5 +39,5 @@ object WorkPullingPattern {
    *
    * @param workers The [[sprawler.crawler.actor.Worker]] Router instance.
    */
-  case class RegisterWorkers(workers: ActorRef) extends Message
+  case class RegisterWorkerRouter(workers: ActorRef) extends Message
 }
