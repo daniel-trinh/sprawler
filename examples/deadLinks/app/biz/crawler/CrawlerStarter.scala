@@ -3,6 +3,7 @@ package sprawler.crawler
 import akka.actor._
 
 import sprawler.crawler.url.{ AbsoluteUrl, CrawlerUrl }
+import sprawler.crawler.actor.WorkPullingPattern._
 
 import play.api.libs.json._
 import play.api.libs.iteratee._
@@ -62,7 +63,6 @@ class CrawlerStarter(url: String) extends Streams {
       case Success(crawlerUrl) => {
         crawlerUrl.domain match {
           case Success(d) =>
-            // TODO: replace this with a router for several parallel crawlers
             val masterActor = Akka.system.actorOf(Props(classOf[LinkQueueMaster], List(crawlerUrl)))
             val workerRouter = Akka.system.actorOf(Props(classOf[LinkScraperWorker],
               masterActor,
@@ -70,7 +70,7 @@ class CrawlerStarter(url: String) extends Streams {
               onUrlComplete _,
               onNotCrawlable _
             ))
-
+            masterActor ! RegisterWorkerRouter(workerRouter)
           case Failure(error) =>
             streamJsonErrorFromException(error)
             cleanup()
@@ -100,5 +100,4 @@ class CrawlerStarter(url: String) extends Streams {
       case Failure(error) => play.Logger.debug("NOT CRAWLABLE:"+error.toString())
     }
   }
-
 }

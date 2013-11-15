@@ -6,7 +6,6 @@ import akka.actor.Terminated
 import akka.routing.Broadcast
 
 import sprawler.crawler.actor.WorkPullingPattern._
-import sprawler.crawler.actor.WorkPullingPattern.Work
 
 import scala.collection.mutable
 import scala.concurrent.{ Future, Promise }
@@ -44,7 +43,7 @@ import scala.Some
  *
  * @tparam T The type of work being processed.
  */
-abstract class Master[T] extends Actor {
+trait Master[T] extends Actor {
   implicit val ec = context.dispatcher
 
   /**
@@ -54,7 +53,7 @@ abstract class Master[T] extends Actor {
    * Should use [[akka.routing.RoundRobinRouter]] or [[akka.routing.SmallestMailboxRouter]] -- other
    * routers might not function properly.
    *
-   * Intended to be set through the [[sprawler.crawler.actor.WorkPullingPattern.RegisterWorkers]] message.
+   * Intended to be set through the [[sprawler.crawler.actor.WorkPullingPattern.RegisterWorkerRouter]] message.
    */
   var workers: Promise[ActorRef] = Promise[ActorRef]()
 
@@ -64,55 +63,54 @@ abstract class Master[T] extends Actor {
   // Akka Agents).
   private var workQueue: mutable.Queue[T] = mutable.Queue[T]()
 
-  def receive = {
-    case workToAdd: Work[T] =>
-      onWork(workToAdd.work)
-      workHook()
-
-    case Terminated(worker) =>
-      onTerminated(worker)
-      terminatedHook()
-
+  def handleGimmeWork: Receive = {
     case GimmeWork =>
-      onGimmeWork()
-      gimmeWorkHook()
+      if (!workQueue.isEmpty) {
+        sender ! Work(workQueue.dequeue())
+      }
+  }
 
-    case WorkItemDone =>
-      workItemDoneHook()
-
-    case RegisterWorkers(workerRouter) =>
-      registerWorkersHook(workerRouter)
+  /*
+  * This default implementation enqueues the provided item of work in the
+  * [[sprawler.crawler.actor.Master.workQueue]], and notifies one of the
+  * workers that more work is available.
+  */
+  def handleWork: Receive = {
+    case workToAdd: Work[T] =>
+      workQueue.enqueue(workToAdd.work)
+      workers.future map { _ ! WorkAvailable }
+  }
+  def handleWorkItemDone: Receive = {
+    case WorkItemDone => ()
+  }
+  def handleTerminated: Receive = {
+    case Terminated(actorRef) => ()
+  }
+  def handleRegisterWorkerRouter: Receive = {
+    case RegisterWorkerRouter(workerRouter) =>
+      workers.success(workerRouter)
   }
 
   /**
-   * Callback, moved out of the 'receive' method to allow for overriding.
-   *
-   * This default implementation enqueues the provided item of work in the
-   * [[sprawler.crawler.actor.Master.workQueue]], and notifies one of the
-   * workers that more work is available.
-   *
-   * @param workToAdd The single work item to add to the queue.
+   * Handles the messages defined in [[sprawler.crawler.actor.WorkPullingPattern]]
+   * 
+   * Individual handlers in this receive can be overridden / chained when this trait is
+   * mixed in elsewhere: 
+   * {{{
+   *   trait LoggedMaster[T] extends Master[T] {
+   *     override def handleWork: Receive = {
+   *       case workToAdd: Work[T] =>
+   *         logger.debug("Work is being added:"+workToAdd.work)
+   *         super.handleWork
+   *     }
+   *   }
+   * }}}
    */
-  def onWork(workToAdd: T) {
-    workQueue.enqueue(workToAdd)
-    workers.future map { _ ! WorkAvailable }
+  def receive = {
+    handleGimmeWork orElse
+      handleWork orElse
+      handleWorkItemDone orElse
+      handleTerminated orElse
+      handleRegisterWorkerRouter
   }
-
-  def onTerminated(worker: ActorRef) {}
-
-  def onGimmeWork() {
-    if (!workQueue.isEmpty) {
-      sender ! Work(workQueue.dequeue())
-    }
-  }
-
-  def registerWorkersHook(workerRouter: ActorRef) {
-    workers.success(workerRouter)
-  }
-
-  // Override these methods to execute custom code after each possible message type
-  def workItemDoneHook() {}
-  def workHook() {}
-  def terminatedHook() {}
-  def gimmeWorkHook() {}
 }
