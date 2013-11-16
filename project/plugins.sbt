@@ -19,3 +19,5 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-proguard" % "0.2.2")
 addSbtPlugin("com.github.mpeltonen" % "sbt-idea" % "1.5.2")
 
 addSbtPlugin("com.tuplejump" % "sbt-yeoman" % "0.6.2")
+
+addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.10.1")

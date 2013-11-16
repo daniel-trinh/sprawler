@@ -80,12 +80,19 @@ trait Master[T] extends Actor {
       workQueue.enqueue(workToAdd.work)
       workers.future map { _ ! WorkAvailable }
   }
+
   def handleWorkItemDone: Receive = {
     case WorkItemDone => ()
   }
+
   def handleTerminated: Receive = {
     case Terminated(actorRef) => ()
   }
+
+  /**
+   * This default implementation completes the worker promise, so that
+   * other code waiting on the worker router to be registered can continue.
+   */
   def handleRegisterWorkerRouter: Receive = {
     case RegisterWorkerRouter(workerRouter) =>
       workers.success(workerRouter)
@@ -93,9 +100,9 @@ trait Master[T] extends Actor {
 
   /**
    * Handles the messages defined in [[sprawler.crawler.actor.WorkPullingPattern]]
-   * 
+   *
    * Individual handlers in this receive can be overridden / chained when this trait is
-   * mixed in elsewhere: 
+   * mixed in elsewhere:
    * {{{
    *   trait LoggedMaster[T] extends Master[T] {
    *     override def handleWork: Receive = {
