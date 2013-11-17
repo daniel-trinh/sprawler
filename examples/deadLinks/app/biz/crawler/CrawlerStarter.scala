@@ -15,7 +15,7 @@ import play.api.Play.current
 import scala.util.{ Try, Success, Failure }
 
 import spray.http.HttpResponse
-import sprawler.crawler.actor.{ LinkQueueMaster, LinkScraperWorker }
+import sprawler.crawler.actor.{StreamingLinkScraper, LinkQueueMaster, LinkScraperWorker}
 
 /**
  * Entry point of Crawler.
@@ -66,9 +66,7 @@ class CrawlerStarter(url: String) extends Streams {
             val masterActor = Akka.system.actorOf(Props(classOf[LinkQueueMaster], List(crawlerUrl)))
             val workerRouter = Akka.system.actorOf(Props(classOf[LinkScraperWorker],
               masterActor,
-              crawlerUrl,
-              onUrlComplete _,
-              onNotCrawlable _
+              crawlerUrl
             ))
             masterActor ! RegisterWorkerRouter(workerRouter)
           case Failure(error) =>
@@ -80,24 +78,6 @@ class CrawlerStarter(url: String) extends Streams {
         streamJsonErrorFromException(error)
         cleanup()
       }
-    }
-  }
-
-  private def onUrlComplete(url: CrawlerUrl, response: Try[HttpResponse]) {
-    response match {
-      case Success(httpResponse) =>
-        play.Logger.info(s"url successfully fetched: ${url.uri.toString()}")
-        streamJsonResponse(url.fromUri.toString(), url.uri.toString(), httpResponse)
-      case Failure(error) =>
-        play.Logger.error(error.getMessage)
-        streamJsonErrorFromException(error)
-    }
-  }
-
-  private def onNotCrawlable(url: CrawlerUrl, reason: Try[Unit]) {
-    reason match {
-      case Success(_)     => "do nothing"
-      case Failure(error) => play.Logger.debug("NOT CRAWLABLE:"+error.toString())
     }
   }
 }

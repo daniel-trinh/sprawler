@@ -85,6 +85,7 @@ object ApplicationBuild extends Build {
     appDependencies,
     path = file("examples/deadLinks")
   ).settings(
+    (scalacOptions ++= scalacSettings) ++
     Yeoman.yeomanSettings: _*
   ).dependsOn(
     sprawler
@@ -112,7 +113,7 @@ object Dependencies {
   object V {
     val Scala = "2.10.3"
     val Spray = "1.1-M8"
-    val Akka  = "2.2.1"
+    val Akka  = "2.2.3"
     val SprayNightly = "1.2-20130912"
   }
 

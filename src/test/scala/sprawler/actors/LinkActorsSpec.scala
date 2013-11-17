@@ -5,7 +5,7 @@ import akka.actor.{ ActorRef, PoisonPill, ActorSystem, Props }
 import akka.routing.{ SmallestMailboxRouter, DefaultResizer, Broadcast }
 
 import sprawler.DummyTestServer
-import sprawler.crawler.actor.{ LinkQueueMaster, LinkScraperWorker }
+import sprawler.crawler.actor.{ LinkScraper, LinkQueueMaster, LinkScraperWorker }
 import sprawler.crawler.actor.WorkPullingPattern._
 import sprawler.crawler.url.{ CrawlerUrl, AbsoluteUrl }
 import sprawler.SpecHelper
@@ -21,6 +21,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 import spray.http.{ HttpResponse, Uri }
 import spray.can.Http
+import sprawler.actors.LinkActorsSpec.UncrawlableLinkScraper
 
 class LinkActorsSpec(_system: ActorSystem)
     extends TestKit(_system)
@@ -103,7 +104,7 @@ class LinkActorsSpec(_system: ActorSystem)
         uri = Uri(SpecHelper.testDomain+"/redirectOnce")
       )
 
-      LinkActorsSpec.setupWorker(self, crawlerUrl) { workerRouter =>
+      LinkActorsSpec.setupWorker(propArgs = Seq(self, crawlerUrl)) { workerRouter =>
         expectMsg(GimmeWork)
 
         workerRouter ! Work(crawlerUrl)
@@ -120,7 +121,7 @@ class LinkActorsSpec(_system: ActorSystem)
         uri = Uri(SpecHelper.testDomain+"/redirectOnce")
       )
 
-      LinkActorsSpec.setupWorker(self, crawlerUrl) { workerRouter =>
+      LinkActorsSpec.setupWorker(propArgs = Seq(self, crawlerUrl)) { workerRouter =>
         expectMsg(GimmeWork)
 
         workerRouter ! Work(crawlerUrl)
@@ -146,24 +147,23 @@ class LinkActorsSpec(_system: ActorSystem)
 
       var uncrawlableLinks = mutable.ArrayBuffer[CrawlerUrl]()
 
-      def onNotCrawlable(url: CrawlerUrl, reason: Throwable) {
-        uncrawlableLinks += url
-      }
+      LinkActorsSpec.setupWorker(
+        workerClass = Some(classOf[UncrawlableLinkScraper]),
+        propArgs = Seq(self, redirectCrawlerUrl, uncrawlableLinks)
+      ) { workerRouter =>
+          expectMsg(GimmeWork)
 
-      LinkActorsSpec.setupWorker(self, redirectCrawlerUrl, onNotCrawlable = onNotCrawlable) { workerRouter =>
-        expectMsg(GimmeWork)
+          workerRouter ! Work(redirectCrawlerUrl)
 
-        workerRouter ! Work(redirectCrawlerUrl)
+          // expectMsg checks messages in the order they are received, dequeueing
+          // them one at a time each time expectMsg is called.
+          // This will throw an exception if Work(...) is received instead of
+          // WorkItemDone.
+          expectMsg(WorkItemDone)
+          expectMsg(GimmeWork)
 
-        // expectMsg checks messages in the order they are received, dequeueing
-        // them one at a time each time expectMsg is called.
-        // This will throw an exception if Work(...) is received instead of
-        // WorkItemDone.
-        expectMsg(WorkItemDone)
-        expectMsg(GimmeWork)
-
-        uncrawlableLinks shouldBe mutable.ArrayBuffer[CrawlerUrl](redirectCrawlerUrl)
-      }
+          uncrawlableLinks shouldBe mutable.ArrayBuffer[CrawlerUrl](redirectCrawlerUrl)
+        }
     }
     "send links to be crawled to master" in {
 
@@ -171,7 +171,7 @@ class LinkActorsSpec(_system: ActorSystem)
         uri = Uri(SpecHelper.testDomain+"/"),
         depth = 10)
 
-      LinkActorsSpec.setupWorker(self, crawlerUrl) { workerRouter =>
+      LinkActorsSpec.setupWorker(propArgs = Seq(self, crawlerUrl)) { workerRouter =>
         expectMsg(GimmeWork)
 
         workerRouter ! Work(crawlerUrl)
@@ -187,45 +187,35 @@ class LinkActorsSpec(_system: ActorSystem)
 
         expectMsg(WorkItemDone)
         expectMsg(GimmeWork)
-
       }
     }
-
   }
 }
 
 object LinkActorsSpec {
 
-  val resizer = DefaultResizer(lowerBound = 1, upperBound = 10)
-  val router = SmallestMailboxRouter(nrOfInstances = 1, resizer = Some(resizer))
-
-  def onUrlComplete(url: CrawlerUrl, response: Try[HttpResponse]) {
-    response match {
-      case Success(httpResponse) =>
-        println(s"url successfully fetched: ${url.uri.toString()}")
-      case Failure(error) =>
-        println("error:"+error.getMessage)
+  class UncrawlableLinkScraper(
+      masterRef: ActorRef,
+      url: CrawlerUrl,
+      uncrawlableLinks: mutable.ArrayBuffer[CrawlerUrl]) extends LinkScraperWorker(masterRef, url) {
+    override def onUrlNotCrawlable = (url, error) => {
+      uncrawlableLinks += url
     }
   }
 
-  def onNotCrawlable(url: CrawlerUrl, reason: Throwable) {
-    println("NOT CRAWLABLE:"+reason.toString)
-  }
+  val resizer = DefaultResizer(lowerBound = 1, upperBound = 10)
+  val router = SmallestMailboxRouter(nrOfInstances = 1, resizer = Some(resizer))
 
-  def setupWorker[T](
-    masterRef: ActorRef,
-    url: CrawlerUrl,
-    onUrlComplete: (CrawlerUrl, Try[HttpResponse]) => Unit = onUrlComplete,
-    onNotCrawlable: (CrawlerUrl, Throwable) => Unit = onNotCrawlable)(f: ActorRef => T)(implicit system: ActorSystem): T = {
+  def setupWorker[T, U <: LinkScraperWorker](
+    workerClass: Option[Class[U]] = None,
+    propArgs: Seq[Any])(f: ActorRef => T)(implicit system: ActorSystem): T = {
 
-    val workerProps = Props(classOf[LinkScraperWorker],
-      masterRef,
-      url,
-      onUrlComplete,
-      onNotCrawlable
-    )
+    val clazz = workerClass.getOrElse {
+      classOf[LinkScraperWorker]
+    }
 
-    val workerRouter = system.actorOf(workerProps.withRouter(router))
+    val props = Props(clazz, propArgs: _*)
+    val workerRouter = system.actorOf(props.withRouter(router))
 
     f(workerRouter)
   }

@@ -13,13 +13,26 @@ import scala.reflect.ClassTag
  * See [[sprawler.crawler.actor.WorkPullingPattern]] for the types of messages that are
  * handled between this worker and [[sprawler.crawler.actor.Master]].
  *
- * @param master [[sprawler.crawler.actor.Master]] Actor that handles storing and orchestrating
- *               work between itself and it's worker actors.
- *
  * @tparam T The type of work being processed.
  */
-abstract class Worker[T: ClassTag](val master: ActorRef) extends Actor {
+trait Worker[T] extends Actor {
   import WorkPullingPattern._
+
+  /**
+   * [[sprawler.crawler.actor.Master]] Actor that handles storing and orchestrating
+   * work between itself and it's worker actors.
+   * @return
+   */
+  def master: ActorRef
+
+  /**
+   * Processes a single work item.
+   *
+   * @param work The actual piece of work to process.
+   * @return A future of any type. When the work is complete, the master actor is notified
+   *         that this worker is ready for more work.
+   */
+  def doWork(work: T): Future[_]
 
   implicit val ec = context.dispatcher
 
@@ -33,13 +46,4 @@ abstract class Worker[T: ClassTag](val master: ActorRef) extends Actor {
     case Work(work: T) ⇒
       doWork(work) onComplete { case _ => master ! GimmeWork }
   }
-
-  /**
-   * Processes a single work item.
-   *
-   * @param work The actual piece of work to process.
-   * @return A future of any type. When the work is complete, the master actor is notified
-   *         that this worker is ready for more work.
-   */
-  def doWork(work: T): Future[_]
 }
