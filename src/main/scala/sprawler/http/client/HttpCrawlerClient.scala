@@ -5,7 +5,7 @@ import akka.contrib.throttle._
 import akka.contrib.throttle.Throttler._
 
 import sprawler.CrawlerExceptions._
-import sprawler.XmlParser
+import sprawler.HtmlParser
 import sprawler.config._
 import crawlercommons.robots.{ BaseRobotRules, SimpleRobotRulesParser }
 

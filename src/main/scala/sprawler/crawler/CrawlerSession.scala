@@ -11,6 +11,7 @@ import spray.caching.{ LruCache, Cache }
 import spray.http.Uri
 
 import scala.concurrent.{ Future, ExecutionContext }
+import sprawler.CrawlerExceptions.UnknownException
 
 /**
  * Stores state scoped to a single crawler request.
@@ -44,8 +45,13 @@ object CrawlerSession {
   def retrieveClient(
     uri: Uri,
     crawlerConfig: CrawlerConfig = DefaultCrawlerConfig)(implicit ec: ExecutionContext, system: ActorSystem): Future[HttpCrawlerClient] = {
-    crawlerClientCache(uri.authority.host) {
-      Future.successful(HttpCrawlerClient(uri, crawlerConfig)(system))
+    if (uri.authority.isEmpty) {
+      Future.failed(UnknownException(s"uri with empty authority passed: uri: $uri"))
+    } else {
+      crawlerClientCache(uri.authority.host) {
+        println("URI!!!!!!!!"+uri.authority)
+        Future.successful(HttpCrawlerClient(uri, crawlerConfig)(system))
+      }
     }
   }
 }
