@@ -15,7 +15,11 @@ import play.api.Play.current
 import scala.util.{ Try, Success, Failure }
 
 import spray.http.HttpResponse
-import sprawler.crawler.actor.{StreamingLinkScraper, LinkQueueMaster, LinkScraperWorker}
+import sprawler.crawler.actor._
+import scala.util.Success
+import scala.util.Failure
+import sprawler.crawler.actor.WorkPullingPattern.RegisterWorkerRouter
+import sprawler.crawler.url.AbsoluteUrl
 
 /**
  * Entry point of Crawler.
@@ -29,10 +33,7 @@ class CrawlerStarter(url: String) extends Streams {
     val urlToCrawl = AbsoluteUrl(uri = url)
     val isCrawlable = urlToCrawl.isCrawlable
 
-    isCrawlable match {
-      case Success(_)     => Success(urlToCrawl)
-      case Failure(error) => Failure(error)
-    }
+    isCrawlable map { _ => urlToCrawl}
   }
 
   var channel: Concurrent.Channel[JsValue] = null
@@ -41,10 +42,8 @@ class CrawlerStarter(url: String) extends Streams {
     onStart(channel)
   }, {
     play.Logger.info("Channel closing..")
-    channel.eofAndEnd()
   }, { (str, input) =>
     play.Logger.error("An error is causing the channel to close..")
-    channel.eofAndEnd()
   })
 
   /**
@@ -59,25 +58,24 @@ class CrawlerStarter(url: String) extends Streams {
   private def onStart(channel: Channel[JsValue]) {
     play.Logger.info(s"Crawler started: $url")
 
-    tryCrawlerUrl match {
-      case Success(crawlerUrl) => {
-        crawlerUrl.domain match {
-          case Success(d) =>
-            val masterActor = Akka.system.actorOf(Props(classOf[LinkQueueMaster], List(crawlerUrl)))
-            val workerRouter = Akka.system.actorOf(Props(classOf[LinkScraperWorker],
-              masterActor,
-              crawlerUrl
-            ))
-            masterActor ! RegisterWorkerRouter(workerRouter)
-          case Failure(error) =>
-            streamJsonErrorFromException(error)
-            cleanup()
-        }
-      }
-      case Failure(error) => {
+    tryCrawlerUrl map { crawlerUrl =>
+      crawlerUrl.domain map { d =>
+        val masterActor = Akka.system.actorOf(Props(classOf[StreamingLinkQueueMaster], List(crawlerUrl), channel))
+
+        val workerRouter = Akka.system.actorOf(Props(classOf[StreamingLinkScraperWorker],
+          masterActor,
+          crawlerUrl,
+          channel
+        ))
+
+        masterActor ! RegisterWorkerRouter(workerRouter)
+      } recover { case error =>
         streamJsonErrorFromException(error)
-        cleanup()
+        channel.end()
       }
+    } recover { case error =>
+      streamJsonErrorFromException(error)
+      channel.end()
     }
   }
 }

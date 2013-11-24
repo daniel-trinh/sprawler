@@ -3,10 +3,12 @@ package sprawler.crawler.actor
 import sprawler.crawler.url.CrawlerUrl
 
 import akka.actor.ActorRef
-
+import akka.event.Logging
+ 
 import spray.http.HttpResponse
 
 import scala.util.{Success, Failure, Try}
+import scala.async.Async.{ async, await }
 import scala.concurrent.Future
 import sprawler.crawler.Streams
 import play.api.libs.iteratee.Concurrent.Channel
@@ -14,19 +16,19 @@ import play.api.libs.json.JsValue
 
 trait StreamingLinkScraper extends LinkScraper with Streams {
 
-  override def onUrlComplete(url: CrawlerUrl, response: Try[HttpResponse]) {
+  override def onUrlComplete(url: CrawlerUrl, response: Try[HttpResponse]) = async {
+    await(super.onUrlComplete(url, response))
     response match {
       case Success(httpResponse) =>
-        play.Logger.info(s"url successfully fetched: ${url.uri.toString()}")
         streamJsonResponse(url.fromUri.toString(), url.uri.toString(), httpResponse)
       case Failure(error) =>
-        play.Logger.error(error.getMessage)
         streamJsonErrorFromException(error)
     }
   }
 
-  override def onUrlNotCrawlable(url: CrawlerUrl, error: Throwable) {
-    play.Logger.debug("NOT CRAWLABLE:"+error.toString)
+  override def onUrlNotCrawlable(url: CrawlerUrl, error: Throwable) = async {
+    await(super.onUrlNotCrawlable(url, error))
+    streamJsonErrorFromException(error)
   }
 }
 
@@ -44,4 +46,22 @@ class StreamingLinkScraperWorker(
   master: ActorRef,
   originCrawlerUrl: CrawlerUrl,
   val channel: Channel[JsValue]
-) extends LinkScraperWorker(master, originCrawlerUrl) with StreamingLinkScraper
+) extends LinkScraperWorker(master, originCrawlerUrl) with StreamingLinkScraper {
+  val log = Logging(context.system, this)
+
+  override def onUrlComplete(url: CrawlerUrl, response: Try[HttpResponse]) = async {
+    await(super.onUrlComplete(url, response))
+
+    response match {
+      case Success(httpResponse) => 
+        log.info(s"url successfully fetched: ${url.uri}")
+      case Failure(error) =>
+        log.error(s"url failed to fetch: ${error.getMessage}")
+    }
+  }
+
+  override def onUrlNotCrawlable(url: CrawlerUrl, error: Throwable) = async {
+    await(super.onUrlNotCrawlable(url, error))
+    log.info(s"url not crawlable: ${url.uri} reason: ${error.getMessage}")
+  }
+}

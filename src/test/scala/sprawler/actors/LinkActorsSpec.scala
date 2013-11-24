@@ -13,9 +13,8 @@ import sprawler.SpecHelper
 import org.scalatest.{ WordSpecLike, ShouldMatchers, BeforeAndAfter, BeforeAndAfterAll }
 
 import scala.collection.mutable
-import scala.concurrent.Await
+import scala.concurrent.{ Future, Await, ExecutionContext }
 import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext
 import scala.util.{ Failure, Success, Try }
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -198,7 +197,7 @@ object LinkActorsSpec {
       masterRef: ActorRef,
       url: CrawlerUrl,
       uncrawlableLinks: mutable.ArrayBuffer[CrawlerUrl]) extends LinkScraperWorker(masterRef, url) {
-    override def onUrlNotCrawlable = (url, error) => {
+    override def onUrlNotCrawlable(url: CrawlerUrl, error: Throwable) = Future {
       uncrawlableLinks += url
     }
   }

@@ -43,7 +43,7 @@ import scala.Some
  *
  * @tparam T The type of work being processed.
  */
-trait Master[T] extends Actor {
+abstract class Master[T] extends Actor {
   implicit val ec = context.dispatcher
 
   /**
@@ -63,11 +63,10 @@ trait Master[T] extends Actor {
   // Akka Agents).
   private var workQueue: mutable.Queue[T] = mutable.Queue[T]()
 
-  def handleGimmeWork: Receive = {
-    case GimmeWork =>
-      if (!workQueue.isEmpty) {
-        sender ! Work(workQueue.dequeue())
-      }
+  def handleGimmeWork() {
+    if (!workQueue.isEmpty) {
+      sender ! Work(workQueue.dequeue())
+    }
   }
 
   /*
@@ -75,27 +74,21 @@ trait Master[T] extends Actor {
   * [[sprawler.crawler.actor.Master.workQueue]], and notifies one of the
   * workers that more work is available.
   */
-  def handleWork: Receive = {
-    case workToAdd: Work[T] =>
-      workQueue.enqueue(workToAdd.work)
-      workers.future map { _ ! WorkAvailable }
+  def handleWork(work: Work[T]) {
+    workQueue.enqueue(work.work)
+    workers.future map { _ ! WorkAvailable }
   }
 
-  def handleWorkItemDone: Receive = {
-    case WorkItemDone => ()
-  }
+  def handleWorkItemDone() {}
 
-  def handleTerminated: Receive = {
-    case Terminated(actorRef) => ()
-  }
+  def handleTerminated(ref: ActorRef) {}
 
   /**
    * This default implementation completes the worker promise, so that
    * other code waiting on the worker router to be registered can continue.
    */
-  def handleRegisterWorkerRouter: Receive = {
-    case RegisterWorkerRouter(workerRouter) =>
-      workers.success(workerRouter)
+  def handleRegisterWorkerRouter(workerRouter: ActorRef) {
+    workers.success(workerRouter)
   }
 
   /**
@@ -105,19 +98,18 @@ trait Master[T] extends Actor {
    * mixed in elsewhere:
    * {{{
    *   trait LoggedMaster[T] extends Master[T] {
-   *     override def handleWork: Receive = {
-   *       case workToAdd: Work[T] =>
-   *         logger.debug("Work is being added:"+workToAdd.work)
-   *         super.handleWork
+   *     override def handleWork() {
+   *       logger.debug("Work is being added:"+workToAdd.work)
+   *       super.handleWork
    *     }
    *   }
    * }}}
    */
   def receive = {
-    handleGimmeWork orElse
-      handleWork orElse
-      handleWorkItemDone orElse
-      handleTerminated orElse
-      handleRegisterWorkerRouter
+    case GimmeWork                          => handleGimmeWork()
+    case workToAdd: Work[T]                 => handleWork(workToAdd)
+    case WorkItemDone                       => handleWorkItemDone()
+    case Terminated(actorRef)               => handleTerminated(actorRef)
+    case RegisterWorkerRouter(workerRouter) => handleRegisterWorkerRouter(workerRouter)
   }
 }

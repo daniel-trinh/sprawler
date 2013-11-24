@@ -1,20 +1,17 @@
 package controllers
 
-import play.api.Play.current
 import play.api.mvc._
-import play.api.libs.concurrent.Akka
 import play.api.libs.json.JsValue
 import play.api.libs.concurrent.Execution.Implicits._
-
-import scala.concurrent.{ Promise, Future }
-import scala.concurrent.duration._
-
-import akka.util.Timeout
-import play.api.libs.iteratee.{ Iteratee, Concurrent, Enumerator }
+import play.api.libs.iteratee.{ Iteratee, Enumerator }
 import play.api.libs.EventSource
+
+import scala.concurrent.Future
+
 import sprawler.crawler.CrawlerStarter
 
-object LinkCrawler extends Controller {
+
+object LinkCrawlerController extends Controller {
   /**
    * Websocket version of dead link crawler
    * @param url
@@ -39,6 +36,6 @@ object LinkCrawler extends Controller {
   def deadLinksSSE(url: String) = Action {
     // TODO: fix data race problem with actor starting crawling before enumerator is received
     val crawler = new CrawlerStarter(url)
-    Ok.stream(crawler.jsStream through EventSource() andThen Enumerator.eof).as("text/event-stream")
+    Ok.chunked(crawler.jsStream through EventSource()).as("text/event-stream")
   }
 }
