@@ -8,7 +8,7 @@ object Global extends play.api.GlobalSettings {
     |""".stripMargin))
   }
   override def onBadRequest(request: RequestHeader, error: String) = {
-    Future.successful(NotFound(
+    Future.successful(BadRequest(
       s"""|Bad Request @ ${request.toString}
           |Error @ $error
           |""".stripMargin))
