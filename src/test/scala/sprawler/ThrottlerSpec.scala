@@ -20,11 +20,9 @@ class ThrottlerSpec(_system: ActorSystem) extends TestKit(_system)
     with BeforeAndAfterAll
     with DummyThrottler {
 
-  override def afterAll {
+  override def afterAll() {
     TestKit.shutdownActorSystem(system)
   }
-
-  def this() = this(ActorSystem("CrawlerSystem"))
 
   "throttler" should {
     "throttle multiple actions in parallel" when {

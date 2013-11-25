@@ -49,7 +49,6 @@ object CrawlerSession {
       Future.failed(UnknownException(s"uri with empty authority passed: uri: $uri"))
     } else {
       crawlerClientCache(uri.authority.host) {
-        println("URI!!!!!!!!"+uri.authority)
         Future.successful(HttpCrawlerClient(uri, crawlerConfig)(system))
       }
     }
