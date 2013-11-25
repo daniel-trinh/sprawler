@@ -13,9 +13,10 @@ import spray.http.HttpResponse
 import scala.async.Async.{ async, await }
 import scala.util.{ Try, Success, Failure }
 import scala.{ Some, None }
-import scala.concurrent.{ Future, ExecutionContext }
+import scala.concurrent.{ Promise, Future, ExecutionContext }
 
 import WorkPullingPattern._
+import sprawler.config.CrawlerConfig
 
 trait LinkScraper {
   def master: ActorRef
@@ -50,51 +51,75 @@ trait LinkScraper {
   def crawlUrl(url: CrawlerUrl) = {
     val crawlable = url.isCrawlable.asFuture
 
-    // reject urls that are not crawlable
+    // Crawlable urls are stored in cache as "crawled"
     val crawlableHandlers = crawlable
       .map { _ => url.session.visitedUrls.put(url.uri.toString(), true) }
       .recover { case error => onUrlNotCrawlable(url, error) }
 
     val futureResponse = async {
-      // Complete this future with the exception created in the failed url.isCrawlable call,
-      // or continue on if the url is crawlable.
+
+      // Wait for handlers to complete
       await(crawlableHandlers)
+
+      // If crawlable contains a Failure(exception), this will prevent the url from being crawled
+      // (code below in rest of async block is skipped.
+      await(crawlable)
 
       val client = await(retrieveClient(url.uri))
       val response = await(client.get(url.uri))
       val status = response.status.intValue
 
-      val res: HttpResponse = if (status == 200) {
-        // Find links and send them to master queue for more crawling
-        HtmlParser.extractLinks(response.entity.asString, url.uri.toString()) foreach { link =>
-          val nextUrl = url.nextUrl(link)
-          master ! Work(nextUrl)
-        }
-        response
-      } else if (isRedirect(status)) {
-        val redirectsLeft = url.redirectsLeft.getOrElse(client.crawlerConfig.maxRedirects)
-        await(followRedirect(
-          url,
-          response,
-          redirectsLeft,
-          client.crawlerConfig.maxRedirects)
-        )
-      } else {
-        response
+      await(queueLinks(url, response, client.crawlerConfig))
+    }
+
+    // Ensure that a completed future isn't returned until the onComplete handlers have been executed
+    // TODO: figure out better way of doing this
+    val result = Promise[HttpResponse]()
+
+    futureResponse onComplete { tryHttpResponse =>
+      onUrlComplete(url, tryHttpResponse) onComplete { _ =>
+        master ! WorkItemDone
+        result.completeWith(futureResponse)
       }
-      res
     }
+    result.future
+  }
 
-    crawlableHandlers andThen {
-      case _ =>
-        futureResponse.onComplete { tryHttpResponse =>
-          onUrlComplete(url, tryHttpResponse).onComplete { _ =>
-            master ! WorkItemDone
-          }
-        }
+  /**
+   * Sends any found links to the master actor for further crawling.
+   * Queues links found in the [[spray.http.HttpResponse]] body if the response is a 200, or queues redirect
+   * links if the response is a redirect link with a Location header.
+   *
+   * @param url Url that resulted in the HttpResponse (response) after crawling.
+   * @param response The HttpResponse from crawling url
+   * @param crawlerConfig Used to figure out how many redirects are left, to prevent infinite redirects.
+   * @return
+   */
+  def queueLinks(url: CrawlerUrl, response: HttpResponse, crawlerConfig: CrawlerConfig): Future[HttpResponse] = async {
+    val status = response.status.intValue
+    if (status == 200) {
+
+      // Find links and send them to master queue for more crawling
+      HtmlParser.extractLinks(response.entity.asString, url.uri.toString()) foreach { link =>
+        val nextUrl = url.nextUrl(link)
+        master ! Work(nextUrl)
+      }
+
+      response
+    } else if (isRedirect(status)) {
+
+      val redirectsLeft = url.redirectsLeft.getOrElse(crawlerConfig.maxRedirects)
+
+      await(queueRedirectToFollow(
+        url,
+        response,
+        redirectsLeft,
+        crawlerConfig.maxRedirects)
+      )
+
+    } else {
+      response
     }
-
-    futureResponse
   }
 
   private val redirectCodes = Seq(300, 301, 302, 303, 307)
@@ -112,7 +137,7 @@ trait LinkScraper {
   }
 
   /**
-   * Follows the specified location header in the provided redirect response
+   * Queues a redirect location header link to follow from a redirect [[spray.http.HttpResponse]].
    *
    * @param url The visited url that resulted in response ([[sprawler.crawler.url.CrawlerUrl.uri]])
    * @param response The HttpResponse from crawling url ([[sprawler.crawler.url.CrawlerUrl.uri]])
@@ -121,7 +146,7 @@ trait LinkScraper {
    *
    * @return Future'd response if successful, otherwise a Future with a Throwable
    */
-  private def followRedirect(
+  private def queueRedirectToFollow(
     url: CrawlerUrl,
     response: HttpResponse,
     maxRedirects: Int,
