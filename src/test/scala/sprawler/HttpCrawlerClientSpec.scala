@@ -38,6 +38,9 @@ class HttpCrawlerClientSpec(_system: ActorSystem)
     DummyTestServer.shutdownTestServer(system)
   }
 
+  // Make sure not to overwrite "CrawlerSystem" in another test without
+  // also shutting down the test server first, otherwise the test server will
+  // be down when the other test(s) expect it to be up.
   def this() = this(ActorSystem("CrawlerSystem"))
 
   "HttpCrawlerClient" when {
@@ -71,7 +74,7 @@ class HttpCrawlerClientSpec(_system: ActorSystem)
           val timeout = ClientConnectionSettings(system).requestTimeout.length.longValue()
           val retries = HostConnectorSettings(system).maxRetries.longValue()
 
-          //          Add extra slight delay to allow timeout failure to be returned
+          // Add extra slight delay to allow timeout failure to be returned
           val result = Try(Await.result(request, (timeout * (retries + 2)).seconds))
 
           result.isFailure shouldBe true

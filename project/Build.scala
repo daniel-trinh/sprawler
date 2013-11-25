@@ -76,8 +76,10 @@ object ApplicationBuild extends Build {
     settings = standardSettings
   )
   .configs(Atmos)
-  .settings(atmosSettings: _*)
-
+  .settings(
+    ScctPlugin.instrumentSettings ++
+    atmosSettings: _*
+  )
 
   val deadLinksDemo = play.Project(
     appName + "DeadLinksDemo", 
@@ -85,6 +87,7 @@ object ApplicationBuild extends Build {
     appDependencies,
     path = file("examples/deadLinks")
   ).settings(
+    ScctPlugin.mergeReportSettings ++
     (scalacOptions ++= scalacSettings) ++
     Yeoman.yeomanSettings: _*
   ).dependsOn(
