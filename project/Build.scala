@@ -33,7 +33,7 @@ object ApplicationBuild extends Build {
   )
 
   val scalacSettings = Seq(
-    "-Dscalac.patmat.analysisBudget=off",
+    "-Dscalac.patmat.analysisBudget=off"
     "-feature"
     // Uncomment this line to help find initialization order problems
     // "-Xcheckinit"
@@ -115,7 +115,7 @@ object Resolvers {
 object Dependencies {
   object V {
     val Scala = "2.10.3"
-    val Spray = "1.1-M8"
+    val Spray = "1.2.0"
     val Akka  = "2.2.3"
     val SprayNightly = "1.2-20130912"
   }
@@ -129,7 +129,7 @@ object Dependencies {
     "com.typesafe"                    %  "config"           % "1.0.2",
     "com.github.nscala-time"          %% "nscala-time"      % "0.6.0",
     "com.typesafe.atmos"              %  "trace-akka-2.1.4" % "1.2.1",
-    "org.scala-lang.modules"          %% "scala-async"      % "0.9.0-M2"
+    "org.scala-lang.modules"          %% "scala-async"      % "0.9.0-M4"
   )
   val Seq(typesafeConfig, nscalaTime, akkaTrace, scalaAsync) = miscDeps
 
@@ -150,12 +150,12 @@ object Dependencies {
 
   // Spray
   val sprayDeps = Seq(
-    "io.spray" %  "spray-client"  % V.SprayNightly,
-    "io.spray" %  "spray-can"     % V.SprayNightly,
-    "io.spray" %  "spray-http"    % V.SprayNightly,
-    "io.spray" %  "spray-httpx"   % V.SprayNightly,
-    "io.spray" %  "spray-util"    % V.SprayNightly,
-    "io.spray" %  "spray-caching" % V.SprayNightly
+    "io.spray" %  "spray-client"  % V.Spray,
+    "io.spray" %  "spray-can"     % V.Spray,
+    "io.spray" %  "spray-http"    % V.Spray,
+    "io.spray" %  "spray-httpx"   % V.Spray,
+    "io.spray" %  "spray-util"    % V.Spray,
+    "io.spray" %  "spray-caching" % V.Spray
   )
   val Seq(
     sprayClient,
@@ -178,7 +178,7 @@ object Dependencies {
     "org.scalatest"     %  "scalatest_2.10"              % "2.0"          % "test",
     "org.scalamock"     %% "scalamock-scalatest-support" % "3.0.1"        % "test",
     // Used to start a bare bones server for testing the crawler
-    "io.spray"          %  "spray-routing"               % V.SprayNightly % "test"
+    "io.spray"          %  "spray-routing"               % V.Spray        % "test"
   )
   val Seq(akkaTestkit, scalaTest, scalaMock, sprayRouting) = testDeps
 }

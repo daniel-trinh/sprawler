@@ -116,7 +116,6 @@ trait LinkScraper {
         redirectsLeft,
         crawlerConfig.maxRedirects)
       )
-
     } else {
       response
     }
