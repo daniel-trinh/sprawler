@@ -33,7 +33,7 @@ object ApplicationBuild extends Build {
   )
 
   val scalacSettings = Seq(
-    "-Dscalac.patmat.analysisBudget=off"
+    "-Dscalac.patmat.analysisBudget=off",
     "-feature"
     // Uncomment this line to help find initialization order problems
     // "-Xcheckinit"
