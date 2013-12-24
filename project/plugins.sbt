@@ -10,8 +10,6 @@ resolvers += "spray repo" at "http://repo.spray.io"
 
 resolvers += Classpaths.typesafeResolver
 
-resolvers += "scct-github-repository" at "http://mtkopone.github.com/scct/maven-repo"
-
 addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.2.0")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-scalariform" % "1.2.0")
@@ -26,4 +24,4 @@ addSbtPlugin("com.tuplejump" % "sbt-yeoman" % "0.6.2")
 
 addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.10.1")
 
-addSbtPlugin("com.github.scct" % "sbt-scct" % "0.2.1")
+addSbtPlugin("de.johoop" % "jacoco4sbt" % "2.1.4")

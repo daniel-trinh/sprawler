@@ -4,6 +4,8 @@ import com.tuplejump.sbt.yeoman.Yeoman
 import com.typesafe.sbt.SbtScalariform
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 import com.typesafe.sbt.SbtAtmos.{ Atmos, atmosSettings }
+import de.johoop.jacoco4sbt._
+import JacocoPlugin._
 
 object ApplicationBuild extends Build {
 
@@ -70,29 +72,28 @@ object ApplicationBuild extends Build {
     scalacOptions               ++= scalacSettings
   )
 
-  val sprawler = Project(
-    id       = appName,
-    base     = file("."),
-    settings = standardSettings
+  lazy val sprawler: Project = Project(
+    id        = appName,
+    base      = file("."),
+    settings  = standardSettings,
+    aggregate = Seq(deadLinksDemo)
   )
   .configs(Atmos)
   .settings(
-    ScctPlugin.instrumentSettings ++
+    jacoco.settings ++
     atmosSettings: _*
   )
 
-  val deadLinksDemo = play.Project(
+  lazy val deadLinksDemo: Project = play.Project(
     appName + "DeadLinksDemo", 
     "0.1.0",
     appDependencies,
     path = file("examples/deadLinks")
   ).settings(
-    ScctPlugin.mergeReportSettings ++
+    jacoco.settings ++
     (scalacOptions ++= scalacSettings) ++
     Yeoman.yeomanSettings: _*
   ).dependsOn(
-    sprawler
-  ).aggregate(
     sprawler
   )
 }
