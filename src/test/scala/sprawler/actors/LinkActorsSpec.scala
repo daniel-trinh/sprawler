@@ -207,7 +207,7 @@ object LinkActorsSpec {
 
   def setupWorker[T, U <: LinkScraperWorker](
     workerClass: Option[Class[U]] = None,
-    propArgs:    Seq[Any])(f: ActorRef => T)(implicit system:ActorSystem): T = {
+    propArgs:    Seq[Any])(f: ActorRef => T)(implicit system: ActorSystem): T = {
 
     val clazz = workerClass.getOrElse {
       classOf[LinkScraperWorker]
