@@ -34,7 +34,10 @@ trait SpecHelper {
     }
   }
 
-  private def executeWithinClient[T](crawlerConfig: CrawlerConfig, f: HttpCrawlerClient => T, port: Int = SpecHelper.port): T = {
+  private def executeWithinClient[T](
+    crawlerConfig: CrawlerConfig,
+    f:             HttpCrawlerClient => T,
+    port:          Int                    = SpecHelper.port): T = {
     val uri = Uri(s"http://localhost:$port")
 
     val client = HttpCrawlerClient(uri, crawlerConfig)

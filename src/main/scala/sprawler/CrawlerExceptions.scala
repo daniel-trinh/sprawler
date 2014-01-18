@@ -62,9 +62,9 @@ object CrawlerExceptions {
    * @param errorType
    */
   case class FailedHttpRequestException(
-    status: Int,
-    reason: String,
-    message: String,
+    status:    Int,
+    reason:    String,
+    message:   String,
     errorType: String = "failed_http_request") extends CrawlerException(message) with NoStackTrace
 
   /**
@@ -75,9 +75,9 @@ object CrawlerExceptions {
    * @param errorType
    */
   case class UrlNotAllowedException(
-    host: String,
-    path: String,
-    message: String,
+    host:      String,
+    path:      String,
+    message:   String,
     errorType: String = "url_not_allowed") extends CrawlerException(message) with NoStackTrace
 
   /**
@@ -96,9 +96,9 @@ object CrawlerExceptions {
    * @param errorType
    */
   case class UnprocessableUrlException(
-      fromUrl: String,
-      toUrl: String,
-      message: String,
+      fromUrl:   String,
+      toUrl:     String,
+      message:   String,
       errorType: String = "unprocessable_url") extends CrawlerException(message) with NoStackTrace {
     override def toString: String = {
       s"fromUri: $fromUrl, toUrl: $toUrl, message: $message"
@@ -122,15 +122,15 @@ object CrawlerExceptions {
    * @param errorType
    */
   case class RedirectLimitReachedException(
-    fromUrl: String,
-    toUrl: String,
-    message: String = "Redirect limit reached",
-    maxRedirects: Int = CrawlerConfig.maxRedirects,
-    errorType: String = "redirect_limit_reached") extends CrawlerException(message) with NoStackTrace
+    fromUrl:      String,
+    toUrl:        String,
+    message:      String = "Redirect limit reached",
+    maxRedirects: Int    = CrawlerConfig.maxRedirects,
+    errorType:    String = "redirect_limit_reached") extends CrawlerException(message) with NoStackTrace
 
   case class MissingRedirectUrlException(
-    fromUrl: String,
-    message: String,
+    fromUrl:   String,
+    message:   String,
     errorType: String = "missing_redirect_url") extends CrawlerException(message) with NoStackTrace
 
   /**
@@ -139,7 +139,7 @@ object CrawlerExceptions {
    * @param errorType
    */
   case class UnknownException(
-    message: String,
+    message:   String,
     errorType: String = "unknown") extends CrawlerException(message)
 }
 

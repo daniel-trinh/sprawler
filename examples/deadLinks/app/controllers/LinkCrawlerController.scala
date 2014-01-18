@@ -10,7 +10,6 @@ import scala.concurrent.Future
 
 import sprawler.crawler.CrawlerStarter
 
-
 object LinkCrawlerController extends Controller {
   /**
    * Websocket version of dead link crawler

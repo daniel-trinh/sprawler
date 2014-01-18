@@ -22,8 +22,11 @@ object FutureActions {
    * @return A future completed with message after duration
    */
   def futureTask[A](
-    message: => A,
-    duration: FiniteDuration)(implicit system: ActorSystem, ec: ExecutionContext): Future[A] = {
+    message:  => A,
+    duration: FiniteDuration)(
+      implicit
+      system: ActorSystem,
+      ec:     ExecutionContext): Future[A] = {
 
     val p = Promise[A]()
     system.scheduler.scheduleOnce(delay = duration) {

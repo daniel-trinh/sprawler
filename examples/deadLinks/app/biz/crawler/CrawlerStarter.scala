@@ -33,7 +33,7 @@ class CrawlerStarter(url: String) extends Streams {
     val urlToCrawl = AbsoluteUrl(uri = url)
     val isCrawlable = urlToCrawl.isCrawlable
 
-    isCrawlable map { _ => urlToCrawl}
+    isCrawlable map { _ => urlToCrawl }
   }
 
   var channel: Concurrent.Channel[JsValue] = null
@@ -69,13 +69,15 @@ class CrawlerStarter(url: String) extends Streams {
         ))
 
         masterActor ! RegisterWorkerRouter(workerRouter)
-      } recover { case error =>
+      } recover {
+        case error =>
+          streamJsonErrorFromException(error)
+          channel.end()
+      }
+    } recover {
+      case error =>
         streamJsonErrorFromException(error)
         channel.end()
-      }
-    } recover { case error =>
-      streamJsonErrorFromException(error)
-      channel.end()
     }
   }
 }

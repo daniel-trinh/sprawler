@@ -4,10 +4,10 @@ import sprawler.crawler.url.CrawlerUrl
 
 import akka.actor.ActorRef
 import akka.event.Logging
- 
+
 import spray.http.HttpResponse
 
-import scala.util.{Success, Failure, Try}
+import scala.util.{ Success, Failure, Try }
 import scala.async.Async.{ async, await }
 import scala.concurrent.Future
 import sprawler.crawler.Streams
@@ -43,9 +43,9 @@ trait StreamingLinkScraper extends LinkScraper with Streams {
  * @param channel
  */
 class StreamingLinkScraperWorker(
-  master: ActorRef,
-  originCrawlerUrl: CrawlerUrl,
-  val channel: Channel[JsValue]
+    master:           ActorRef,
+    originCrawlerUrl: CrawlerUrl,
+    val channel:      Channel[JsValue]
 ) extends LinkScraperWorker(master, originCrawlerUrl) with StreamingLinkScraper {
   val log = Logging(context.system, this)
 
@@ -53,7 +53,7 @@ class StreamingLinkScraperWorker(
     await(super.onUrlComplete(url, response))
 
     response match {
-      case Success(httpResponse) => 
+      case Success(httpResponse) =>
         log.info(s"url successfully fetched: ${url.uri}")
       case Failure(error) =>
         log.error(s"url failed to fetch: ${error.getMessage}")

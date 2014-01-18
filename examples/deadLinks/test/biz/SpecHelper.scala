@@ -40,7 +40,7 @@ object SpecHelper {
    */
   class DummyChannel(
       var bucket: mutable.ArrayBuffer[JsValue],
-      var closed: Boolean = false) extends Channel[JsValue] {
+      var closed: Boolean                      = false) extends Channel[JsValue] {
     def push(chunk: Input[JsValue]) {
       chunk match {
         case Input.El(e) => bucket.append(e)

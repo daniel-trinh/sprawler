@@ -89,11 +89,12 @@ sealed abstract class CrawlerUrl {
 }
 
 case class AbsoluteUrl(
-    fromUri: Uri = Empty,
-    uri: Uri,
-    session: CrawlerSession = new CrawlerSession,
-    depth: Int = CrawlerConfig.maxDepth,
-    redirectsLeft: Option[Int] = None) extends CrawlerUrl with CheckUrlCrawlability {
+    fromUri:       Uri            = Empty,
+    uri:           Uri,
+    session:       CrawlerSession = new CrawlerSession,
+    depth:         Int            = CrawlerConfig.maxDepth,
+    redirectsLeft: Option[Int]    = None
+) extends CrawlerUrl with CheckUrlCrawlability {
 
   val domain: Try[String] = {
     // URI does not parse correctly if it doesn't have a valid scheme -- the entire url

@@ -3,7 +3,7 @@ package sprawler.crawler
 import sprawler.CrawlerExceptions._
 import sprawler.CrawlerExceptions.JsonImplicits._
 
-import play.api.libs.iteratee.{Input, Concurrent}
+import play.api.libs.iteratee.{ Input, Concurrent }
 import play.api.libs.json._
 
 import spray.http.HttpResponse
@@ -61,7 +61,8 @@ trait Streams {
           play.Logger.error(error.getStackTraceString)
           streamJsonError(Json.toJson(error), eof)
       }
-      case e: Throwable => streamJsonErrorFromException(UnknownException(e.getMessage))
+      case e: Throwable =>
+        streamJsonErrorFromException(UnknownException(e.getMessage))
         play.Logger.error(error.getStackTraceString)
     }
   }

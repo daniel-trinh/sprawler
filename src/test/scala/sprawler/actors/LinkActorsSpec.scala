@@ -194,8 +194,8 @@ class LinkActorsSpec(_system: ActorSystem)
 object LinkActorsSpec {
 
   class UncrawlableLinkScraper(
-      masterRef: ActorRef,
-      url: CrawlerUrl,
+      masterRef:        ActorRef,
+      url:              CrawlerUrl,
       uncrawlableLinks: mutable.ArrayBuffer[CrawlerUrl]) extends LinkScraperWorker(masterRef, url) {
     override def onUrlNotCrawlable(url: CrawlerUrl, error: Throwable) = Future {
       uncrawlableLinks += url
@@ -207,7 +207,7 @@ object LinkActorsSpec {
 
   def setupWorker[T, U <: LinkScraperWorker](
     workerClass: Option[Class[U]] = None,
-    propArgs: Seq[Any])(f: ActorRef => T)(implicit system: ActorSystem): T = {
+    propArgs:    Seq[Any])(f: ActorRef => T)(implicit system:ActorSystem): T = {
 
     val clazz = workerClass.getOrElse {
       classOf[LinkScraperWorker]

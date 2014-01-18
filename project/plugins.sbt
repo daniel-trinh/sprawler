@@ -12,7 +12,7 @@ resolvers += Classpaths.typesafeResolver
 
 addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.2.0")
 
-addSbtPlugin("com.typesafe.sbt" % "sbt-scalariform" % "1.2.0")
+addSbtPlugin("com.typesafe.sbt" % "sbt-scalariform" % "1.3.0-SNAPSHOT")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-atmos" % "0.2.3")
 

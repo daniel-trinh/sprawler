@@ -95,7 +95,10 @@ trait LinkScraper {
    * @param crawlerConfig Used to figure out how many redirects are left, to prevent infinite redirects.
    * @return
    */
-  def queueLinks(url: CrawlerUrl, response: HttpResponse, crawlerConfig: CrawlerConfig): Future[HttpResponse] = async {
+  def queueLinks(
+    url:           CrawlerUrl,
+    response:      HttpResponse,
+    crawlerConfig: CrawlerConfig): Future[HttpResponse] = async {
     val status = response.status.intValue
     if (status == 200) {
 
@@ -146,9 +149,9 @@ trait LinkScraper {
    * @return Future'd response if successful, otherwise a Future with a Throwable
    */
   private def queueRedirectToFollow(
-    url: CrawlerUrl,
-    response: HttpResponse,
-    maxRedirects: Int,
+    url:           CrawlerUrl,
+    response:      HttpResponse,
+    maxRedirects:  Int,
     redirectsLeft: Int): Future[HttpResponse] = {
 
     require(isRedirect(response.status.intValue))

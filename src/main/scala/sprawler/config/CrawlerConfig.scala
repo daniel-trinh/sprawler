@@ -23,9 +23,9 @@ abstract trait CrawlerConfig {
 }
 
 case class CustomCrawlerConfig(
-  crawlDelay: FiniteDuration = CrawlerConfig.defaultCrawlDelay.milliseconds,
-  maxRedirects: Int = CrawlerConfig.maxRedirects,
-  maxDepth: Int = CrawlerConfig.maxDepth) extends CrawlerConfig
+  crawlDelay:   FiniteDuration = CrawlerConfig.defaultCrawlDelay.milliseconds,
+  maxRedirects: Int            = CrawlerConfig.maxRedirects,
+  maxDepth:     Int            = CrawlerConfig.maxDepth) extends CrawlerConfig
 
 case object DefaultCrawlerConfig extends CrawlerConfig {
   val crawlDelay = CrawlerConfig.defaultCrawlDelay.milliseconds

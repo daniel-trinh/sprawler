@@ -23,7 +23,7 @@ import scala.concurrent.Future
  *                         be the same as [[sprawler.crawler.url.CrawlerUrl.uri]].
  */
 class LinkScraperWorker(
-  val master: ActorRef,
+  val master:       ActorRef,
   originCrawlerUrl: CrawlerUrl)
     extends Worker[CrawlerUrl] with LinkScraper {
 

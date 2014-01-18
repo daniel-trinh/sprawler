@@ -45,7 +45,7 @@ object ApplicationBuild extends Build {
     import scalariform.formatter.preferences._
     FormattingPreferences()
       .setPreference(PreserveDanglingCloseParenthesis, true)
-      .setPreference(AlignParameters, false)
+      .setPreference(AlignParameters, true)
       .setPreference(CompactStringConcatenation, true)
       .setPreference(CompactControlReadability, false)
       .setPreference(AlignSingleLineCaseStatements, true)
@@ -75,8 +75,7 @@ object ApplicationBuild extends Build {
   lazy val sprawler: Project = Project(
     id        = appName,
     base      = file("."),
-    settings  = standardSettings,
-    aggregate = Seq(deadLinksDemo)
+    settings  = standardSettings
   )
   .configs(Atmos)
   .settings(
@@ -90,10 +89,14 @@ object ApplicationBuild extends Build {
     appDependencies,
     path = file("examples/deadLinks")
   ).settings(
+    SbtScalariform.scalariformSettings ++
+    Seq(ScalariformKeys.preferences := formattingPreferences) ++
     jacoco.settings ++
     (scalacOptions ++= scalacSettings) ++
     Yeoman.yeomanSettings: _*
   ).dependsOn(
+    sprawler
+  ).aggregate(
     sprawler
   )
 }

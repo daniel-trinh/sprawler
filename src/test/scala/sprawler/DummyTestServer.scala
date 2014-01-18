@@ -36,7 +36,7 @@ object DummyTestServer extends SimpleRoutingApp {
    * @return If this is successful, a successful bound message should be returned.
    *         An exception will be thrown otherwise.
    */
-  def startTestServer(port: Int = SpecHelper.port)(implicit system: ActorSystem, ctx: ExecutionContext): Http.Bound = synchronized {
+  def startTestServer(port: Int = SpecHelper.port)(implicit system:ActorSystem, ctx: ExecutionContext): Http.Bound = synchronized {
     serverBoundMsg match {
       case None =>
         val futureBound = startServer(
