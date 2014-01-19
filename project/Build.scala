@@ -75,7 +75,8 @@ object ApplicationBuild extends Build {
   lazy val sprawler: Project = Project(
     id        = appName,
     base      = file("."),
-    settings  = standardSettings
+    settings  = standardSettings,
+    aggregate = Seq(deadLinksDemo)
   )
   .configs(Atmos)
   .settings(
@@ -89,14 +90,12 @@ object ApplicationBuild extends Build {
     appDependencies,
     path = file("examples/deadLinks")
   ).settings(
-    SbtScalariform.scalariformSettings ++
-    Seq(ScalariformKeys.preferences := formattingPreferences) ++
     jacoco.settings ++
+    SbtScalariform.scalariformSettings ++
+    Seq(ScalariformKeys.preferences := formattingPreferences) ++ 
     (scalacOptions ++= scalacSettings) ++
     Yeoman.yeomanSettings: _*
   ).dependsOn(
-    sprawler
-  ).aggregate(
     sprawler
   )
 }

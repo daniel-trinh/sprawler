@@ -1,11 +1,8 @@
-
-
 *.class
 *.log
 logs
 
-# temporarily hide all angular.js code
-ui/*
+# hide UI dependencies
 
 # sbt specific
 dist/*
