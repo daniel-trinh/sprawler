@@ -7,7 +7,12 @@ webcrawlerApp = angular.module("webcrawlerApp", [])
         templateUrl: 'views/webcrawler.html'
         controller: 'WebcrawlerCtrl'
         
-uiApp = angular.module('uiApp', [])
+uiApp = angular.module('uiApp', [
+  'ngCookies',
+  'ngResource',
+  'ngSanitize',
+  'ngRoute'
+])
   .config ($routeProvider) ->
     $routeProvider
       .when '/',
@@ -103,7 +108,6 @@ zippyApp.config ($logProvider) ->
 zippyApp.run ($rootScope, $log) ->
   $rootScope.$log = $log
   $log.log("WTF")
-
 
 zippyApp.run ($templateCache) ->
   $templateCache.put("routeParams.html", """

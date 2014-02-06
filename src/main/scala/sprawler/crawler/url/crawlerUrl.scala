@@ -3,7 +3,7 @@ package sprawler.crawler.url
 import sprawler.config.CrawlerConfig
 import sprawler.CrawlerExceptions.UnprocessableUrlException
 
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Success, Try}
 
 import spray.http.Uri
 import spray.http.Uri.Empty
@@ -79,10 +79,10 @@ sealed abstract class CrawlerUrl {
     }
 
     AbsoluteUrl(
-      fromUri = uri,
-      uri = nextUrlTrimmed,
-      session = session,
-      depth = depth - 1,
+      fromUri       = uri,
+      uri           = nextUrlTrimmed,
+      session       = session,
+      depth         = depth - 1,
       redirectsLeft = redirects
     )
   }

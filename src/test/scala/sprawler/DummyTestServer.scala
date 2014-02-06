@@ -41,7 +41,7 @@ object DummyTestServer extends SimpleRoutingApp {
       case None =>
         val futureBound = startServer(
           interface = "localhost",
-          port = port) {
+          port      = port) {
             route
           }
         val bound = Await.result(futureBound, 5.seconds)

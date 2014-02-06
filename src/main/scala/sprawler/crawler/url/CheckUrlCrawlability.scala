@@ -94,7 +94,7 @@ trait CheckUrlCrawlability { this: CrawlerUrl =>
       Failure(
         UnprocessableUrlException(
           fromUrl = this.fromUri.toString(),
-          toUrl = this.uri.toString(),
+          toUrl   = this.uri.toString(),
           message = message
         )
       )

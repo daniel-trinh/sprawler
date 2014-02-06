@@ -1,21 +1,21 @@
 package sprawler
 
 import akka.actor.ActorSystem
-import akka.testkit.{ TestProbe, ImplicitSender, TestKit }
+import akka.testkit.{TestProbe, ImplicitSender, TestKit}
 
-import sprawler.config.{ CustomCrawlerConfig, CrawlerConfig }
+import sprawler.config.{CustomCrawlerConfig, CrawlerConfig}
 import sprawler.CrawlerExceptions._
 import sprawler.http.client.HttpCrawlerClient
 
 import org.scalatest._
 import org.scalatest.matchers.ShouldMatchers
 
-import scala.concurrent.{ ExecutionContext, Future, Await }
+import scala.concurrent.{ExecutionContext, Future, Await}
 import scala.concurrent.ExecutionContext.Implicits.global
 
-import scala.concurrent.{ Future, Await, ExecutionContext }
+import scala.concurrent.{Future, Await, ExecutionContext}
 import scala.concurrent.duration._
-import scala.util.{ Try, Failure, Success }
+import scala.util.{Try, Failure, Success}
 
 import spray.can.client.HostConnectorSettings
 import spray.can.client.ClientConnectionSettings
@@ -52,7 +52,7 @@ class HttpCrawlerClientSpec(_system: ActorSystem)
         res.status.value shouldBe "200 OK"
       }
       "fetch a simple http:// url" in {
-        val client = HttpCrawlerClient("http://www.yahoo.com")
+        val client = HttpCrawlerClient("http://www.reddit.com/")
         val request = client.get("/robots.txt")
         val response = Await.result(request, 5.seconds)
         response.status.value shouldBe "200 OK"

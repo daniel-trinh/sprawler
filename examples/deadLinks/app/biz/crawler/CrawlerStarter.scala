@@ -62,7 +62,8 @@ class CrawlerStarter(url: String) extends Streams {
       crawlerUrl.domain map { d =>
         val masterActor = Akka.system.actorOf(Props(classOf[StreamingLinkQueueMaster], List(crawlerUrl), channel))
 
-        val workerRouter = Akka.system.actorOf(Props(classOf[StreamingLinkScraperWorker],
+        val workerRouter = Akka.system.actorOf(Props(
+          classOf[StreamingLinkScraperWorker],
           masterActor,
           crawlerUrl,
           channel

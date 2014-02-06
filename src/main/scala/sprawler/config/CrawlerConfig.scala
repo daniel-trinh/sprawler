@@ -13,7 +13,6 @@ object CrawlerConfig extends BaseConfig {
   val defaultCrawlDelay = config.getInt("default-crawl-delay")
   val maxRedirects = config.getInt("max-redirects")
   val maxDepth = config.getInt("max-depth")
-
 }
 
 abstract trait CrawlerConfig {
@@ -28,7 +27,14 @@ case class CustomCrawlerConfig(
   maxDepth:     Int            = CrawlerConfig.maxDepth) extends CrawlerConfig
 
 case object DefaultCrawlerConfig extends CrawlerConfig {
+  CustomCrawlerConfig(
+    crawlDelay   = CrawlerConfig.defaultCrawlDelay.milliseconds,
+    maxRedirects = CrawlerConfig.maxRedirects,
+    maxDepth     = CrawlerConfig.maxDepth
+  )
+
   val crawlDelay = CrawlerConfig.defaultCrawlDelay.milliseconds
   val maxRedirects = CrawlerConfig.maxRedirects
   val maxDepth = CrawlerConfig.maxDepth
 }
+

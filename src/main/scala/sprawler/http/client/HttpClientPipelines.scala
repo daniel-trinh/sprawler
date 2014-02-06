@@ -139,8 +139,8 @@ trait HttpClientPipelines extends Throttler {
 
         await(Future.failed[HttpResponse](
           UrlNotAllowedException(
-            host = domain,
-            path = request.uri.path.toString(),
+            host    = domain,
+            path    = request.uri.path.toString(),
             message = UrlNotAllowedException.RobotRuleDisallowed)
         ))
       }

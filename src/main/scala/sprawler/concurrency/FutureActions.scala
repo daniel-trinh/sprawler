@@ -21,13 +21,7 @@ object FutureActions {
    * @tparam A The type of the param message
    * @return A future completed with message after duration
    */
-  def futureTask[A](
-    message:  => A,
-    duration: FiniteDuration)(
-      implicit
-      system: ActorSystem,
-      ec:     ExecutionContext): Future[A] = {
-
+  def futureTask[A](message: => A, duration: FiniteDuration)(implicit system: ActorSystem, ec: ExecutionContext): Future[A] = {
     val p = Promise[A]()
     system.scheduler.scheduleOnce(delay = duration) {
       p.completeWith(Future.successful(message))

@@ -10,8 +10,8 @@ class RobotRulesSpec extends WordSpec with ShouldMatchers with BeforeAndAfterAll
   "RobotRules" when {
     def createDummyRule(robotsTxtContext: String) = {
       RobotRules.create(
-        domain = "https://somepage.com",
-        crawlerName = "someName",
+        domain           = "https://somepage.com",
+        crawlerName      = "someName",
         robotsTxtContent = robotsTxtContext
       )
     }

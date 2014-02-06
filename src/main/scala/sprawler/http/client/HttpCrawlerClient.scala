@@ -207,7 +207,6 @@ trait Throttler {
   lazy val throttler: Future[ActorRef] = async {
     val delayRate = await(crawlDelayRate)
     val throttle = system.actorOf(Props(new TimerBasedThrottler(delayRate)))
-
     throttle ! SetTarget(Some(forwarder))
     throttle
   }

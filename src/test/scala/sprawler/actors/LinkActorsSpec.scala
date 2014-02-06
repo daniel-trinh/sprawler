@@ -140,7 +140,7 @@ class LinkActorsSpec(_system: ActorSystem)
     "handle infinite redirect (redirect limit reached)" in {
 
       val redirectCrawlerUrl = AbsoluteUrl(
-        uri = Uri(SpecHelper.testDomain+"/redirectForever/1234"),
+        uri           = Uri(SpecHelper.testDomain+"/redirectForever/1234"),
         redirectsLeft = Some(0)
       )
 
@@ -148,7 +148,7 @@ class LinkActorsSpec(_system: ActorSystem)
 
       LinkActorsSpec.setupWorker(
         workerClass = Some(classOf[UncrawlableLinkScraper]),
-        propArgs = Seq(self, redirectCrawlerUrl, uncrawlableLinks)
+        propArgs    = Seq(self, redirectCrawlerUrl, uncrawlableLinks)
       ) { workerRouter =>
           expectMsg(GimmeWork)
 
@@ -167,7 +167,7 @@ class LinkActorsSpec(_system: ActorSystem)
     "send links to be crawled to master" in {
 
       val crawlerUrl = AbsoluteUrl(
-        uri = Uri(SpecHelper.testDomain+"/"),
+        uri   = Uri(SpecHelper.testDomain+"/"),
         depth = 10)
 
       LinkActorsSpec.setupWorker(propArgs = Seq(self, crawlerUrl)) { workerRouter =>
