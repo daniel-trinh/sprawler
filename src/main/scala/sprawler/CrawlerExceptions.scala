@@ -65,7 +65,8 @@ object CrawlerExceptions {
     status:    Int,
     reason:    String,
     message:   String,
-    errorType: String = "failed_http_request") extends CrawlerException(message) with NoStackTrace
+    errorType: String = "failed_http_request"
+  ) extends CrawlerException(message) with NoStackTrace
 
   /**
    * Throw this if a URL cannot be crawled due to restrictions in robots.txt.
@@ -78,7 +79,8 @@ object CrawlerExceptions {
     host:      String,
     path:      String,
     message:   String,
-    errorType: String = "url_not_allowed") extends CrawlerException(message) with NoStackTrace
+    errorType: String = "url_not_allowed"
+  ) extends CrawlerException(message) with NoStackTrace
 
   /**
    * Constants describing the possible causes of an invalid url.
@@ -96,10 +98,11 @@ object CrawlerExceptions {
    * @param errorType
    */
   case class UnprocessableUrlException(
-      fromUrl:   String,
-      toUrl:     String,
-      message:   String,
-      errorType: String = "unprocessable_url") extends CrawlerException(message) with NoStackTrace {
+    fromUrl:   String,
+    toUrl:     String,
+    message:   String,
+    errorType: String = "unprocessable_url"
+  ) extends CrawlerException(message) with NoStackTrace {
     override def toString: String = {
       s"fromUri: $fromUrl, toUrl: $toUrl, message: $message"
     }
@@ -126,12 +129,14 @@ object CrawlerExceptions {
     toUrl:        String,
     message:      String = "Redirect limit reached",
     maxRedirects: Int    = CrawlerConfig.maxRedirects,
-    errorType:    String = "redirect_limit_reached") extends CrawlerException(message) with NoStackTrace
+    errorType:    String = "redirect_limit_reached"
+  ) extends CrawlerException(message) with NoStackTrace
 
   case class MissingRedirectUrlException(
     fromUrl:   String,
     message:   String,
-    errorType: String = "missing_redirect_url") extends CrawlerException(message) with NoStackTrace
+    errorType: String = "missing_redirect_url"
+  ) extends CrawlerException(message) with NoStackTrace
 
   /**
    * Throw this if you have no idea what happened.
@@ -140,7 +145,8 @@ object CrawlerExceptions {
    */
   case class UnknownException(
     message:   String,
-    errorType: String = "unknown") extends CrawlerException(message)
+    errorType: String = "unknown"
+  ) extends CrawlerException(message)
 }
 
 sealed abstract class CrawlerException(message: String) extends RuntimeException(message)

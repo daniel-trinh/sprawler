@@ -44,11 +44,12 @@ object CrawlerSession {
    */
   def retrieveClient(
     uri:           Uri,
-    crawlerConfig: CrawlerConfig = DefaultCrawlerConfig)(
-      implicit
-      ec:     ExecutionContext,
-      system: ActorSystem
-    ): Future[HttpCrawlerClient] = {
+    crawlerConfig: CrawlerConfig = DefaultCrawlerConfig
+  )(
+    implicit
+    ec:     ExecutionContext,
+    system: ActorSystem
+  ): Future[HttpCrawlerClient] = {
     if (uri.authority.isEmpty) {
       Future.failed(UnknownException(s"uri with empty authority passed: uri: $uri"))
     } else {

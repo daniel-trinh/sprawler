@@ -3,19 +3,19 @@ package sprawler
 import akka.contrib.throttle.Throttler.Rate
 import akka.actor.ActorSystem
 
-import sprawler.http.client.{ PromiseRequest, Throttler, HttpCrawlerClient }
+import sprawler.http.client.{PromiseRequest, Throttler, HttpCrawlerClient}
 import sprawler.crawler.CrawlerSession
 import sprawler.config._
 
 import scala.collection.mutable
 import org.scalatest._
 
-import play.api.libs.json.{ JsString, JsValue }
+import play.api.libs.json.{JsString, JsValue}
 import play.api.libs.json.JsString
 
 import spray.http.Uri
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Promise, Future }
+import scala.concurrent.{Await, Promise, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 trait SpecHelper {
@@ -37,7 +37,8 @@ trait SpecHelper {
   private def executeWithinClient[T](
     crawlerConfig: CrawlerConfig,
     f:             HttpCrawlerClient => T,
-    port:          Int                    = SpecHelper.port): T = {
+    port:          Int                    = SpecHelper.port
+  ): T = {
     val uri = Uri(s"http://localhost:$port")
 
     val client = HttpCrawlerClient(uri, crawlerConfig)

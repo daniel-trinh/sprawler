@@ -24,8 +24,9 @@ import scala.concurrent.Future
  */
 class LinkScraperWorker(
   val master:       ActorRef,
-  originCrawlerUrl: CrawlerUrl)
-    extends Worker[CrawlerUrl] with LinkScraper {
+  originCrawlerUrl: CrawlerUrl
+)
+  extends Worker[CrawlerUrl] with LinkScraper {
 
   //  override implicit def t = classTag[CrawlerUrl]
 

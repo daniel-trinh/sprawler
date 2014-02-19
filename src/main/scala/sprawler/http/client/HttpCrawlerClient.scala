@@ -31,10 +31,12 @@ import akka.contrib.throttle.Throttler.Rate
  * @param uri The base URI that contains the hostname of the domain to crawl.
  */
 case class HttpCrawlerClient(
-    val uri:           Uri,
-    val crawlerConfig: CrawlerConfig = DefaultCrawlerConfig)(
-        implicit
-        val system: ActorSystem) extends HttpClientPipelines {
+  val uri:           Uri,
+  val crawlerConfig: CrawlerConfig = DefaultCrawlerConfig
+)(
+  implicit
+  val system: ActorSystem
+) extends HttpClientPipelines {
 
   val baseDomain = s"${uri.scheme}://${uri.authority.host.address}"
   val port = uri.authority.port
@@ -154,7 +156,8 @@ object RobotRules {
     domain:           String,
     crawlerName:      String,
     robotsTxtContent: String,
-    crawlerConfig:    CrawlerConfig = DefaultCrawlerConfig): BaseRobotRules = {
+    crawlerConfig:    CrawlerConfig = DefaultCrawlerConfig
+  ): BaseRobotRules = {
     val robotParser = new SimpleRobotRulesParser()
     // Not actually immutable due to setter and getter functions
     val rules = robotParser.parseContent(domain, robotsTxtContent.getBytes, "text/plain", crawlerName)

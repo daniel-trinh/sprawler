@@ -98,7 +98,8 @@ trait LinkScraper {
   def queueLinks(
     url:           CrawlerUrl,
     response:      HttpResponse,
-    crawlerConfig: CrawlerConfig): Future[HttpResponse] = async {
+    crawlerConfig: CrawlerConfig
+  ): Future[HttpResponse] = async {
     val status = response.status.intValue
     if (status == 200) {
 
@@ -117,8 +118,8 @@ trait LinkScraper {
         url,
         response,
         redirectsLeft,
-        crawlerConfig.maxRedirects)
-      )
+        crawlerConfig.maxRedirects
+      ))
     } else {
       response
     }
@@ -152,7 +153,8 @@ trait LinkScraper {
     url:           CrawlerUrl,
     response:      HttpResponse,
     maxRedirects:  Int,
-    redirectsLeft: Int): Future[HttpResponse] = {
+    redirectsLeft: Int
+  ): Future[HttpResponse] = {
 
     require(isRedirect(response.status.intValue))
 

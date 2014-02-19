@@ -23,13 +23,13 @@ import spray.can.client.ClientConnectionSettings
 import spray.http.Uri
 
 class HttpCrawlerClientSpec(_system: ActorSystem)
-    extends TestKit(_system)
-    with WordSpecLike
-    with BeforeAndAfter
-    with BeforeAndAfterAll
-    with ShouldMatchers
-    with PrivateMethodTester
-    with SpecHelper {
+  extends TestKit(_system)
+  with WordSpecLike
+  with BeforeAndAfter
+  with BeforeAndAfterAll
+  with ShouldMatchers
+  with PrivateMethodTester
+  with SpecHelper {
 
   override def beforeAll {
     DummyTestServer.startTestServer()

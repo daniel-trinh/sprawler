@@ -1,34 +1,34 @@
 package sprawler.actors
 
-import akka.testkit.{ TestProbe, ImplicitSender, TestKit }
-import akka.actor.{ ActorRef, PoisonPill, ActorSystem, Props }
-import akka.routing.{ SmallestMailboxRouter, DefaultResizer, Broadcast }
+import akka.testkit.{TestProbe, ImplicitSender, TestKit}
+import akka.actor.{ActorRef, PoisonPill, ActorSystem, Props}
+import akka.routing.{SmallestMailboxRouter, DefaultResizer, Broadcast}
 
 import sprawler.DummyTestServer
-import sprawler.crawler.actor.{ LinkScraper, LinkQueueMaster, LinkScraperWorker }
+import sprawler.crawler.actor.{LinkScraper, LinkQueueMaster, LinkScraperWorker}
 import sprawler.crawler.actor.WorkPullingPattern._
-import sprawler.crawler.url.{ CrawlerUrl, AbsoluteUrl }
+import sprawler.crawler.url.{CrawlerUrl, AbsoluteUrl}
 import sprawler.SpecHelper
 
-import org.scalatest.{ WordSpecLike, ShouldMatchers, BeforeAndAfter, BeforeAndAfterAll }
+import org.scalatest.{WordSpecLike, ShouldMatchers, BeforeAndAfter, BeforeAndAfterAll}
 
 import scala.collection.mutable
-import scala.concurrent.{ Future, Await, ExecutionContext }
+import scala.concurrent.{Future, Await, ExecutionContext}
 import scala.concurrent.duration._
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Success, Try}
 import scala.concurrent.ExecutionContext.Implicits.global
 
-import spray.http.{ HttpResponse, Uri }
+import spray.http.{HttpResponse, Uri}
 import spray.can.Http
 import sprawler.actors.LinkActorsSpec.UncrawlableLinkScraper
 
 class LinkActorsSpec(_system: ActorSystem)
-    extends TestKit(_system)
-    with ImplicitSender
-    with WordSpecLike
-    with BeforeAndAfter
-    with BeforeAndAfterAll
-    with ShouldMatchers {
+  extends TestKit(_system)
+  with ImplicitSender
+  with WordSpecLike
+  with BeforeAndAfter
+  with BeforeAndAfterAll
+  with ShouldMatchers {
 
   override def beforeAll() {
     DummyTestServer.startTestServer()
@@ -168,7 +168,8 @@ class LinkActorsSpec(_system: ActorSystem)
 
       val crawlerUrl = AbsoluteUrl(
         uri   = Uri(SpecHelper.testDomain+"/"),
-        depth = 10)
+        depth = 10
+      )
 
       LinkActorsSpec.setupWorker(propArgs = Seq(self, crawlerUrl)) { workerRouter =>
         expectMsg(GimmeWork)
@@ -194,9 +195,10 @@ class LinkActorsSpec(_system: ActorSystem)
 object LinkActorsSpec {
 
   class UncrawlableLinkScraper(
-      masterRef:        ActorRef,
-      url:              CrawlerUrl,
-      uncrawlableLinks: mutable.ArrayBuffer[CrawlerUrl]) extends LinkScraperWorker(masterRef, url) {
+    masterRef:        ActorRef,
+    url:              CrawlerUrl,
+    uncrawlableLinks: mutable.ArrayBuffer[CrawlerUrl]
+  ) extends LinkScraperWorker(masterRef, url) {
     override def onUrlNotCrawlable(url: CrawlerUrl, error: Throwable) = Future {
       uncrawlableLinks += url
     }
@@ -207,7 +209,8 @@ object LinkActorsSpec {
 
   def setupWorker[T, U <: LinkScraperWorker](
     workerClass: Option[Class[U]] = None,
-    propArgs:    Seq[Any])(f: ActorRef => T)(implicit system: ActorSystem): T = {
+    propArgs:    Seq[Any]
+  )(f: ActorRef => T)(implicit system: ActorSystem): T = {
 
     val clazz = workerClass.getOrElse {
       classOf[LinkScraperWorker]

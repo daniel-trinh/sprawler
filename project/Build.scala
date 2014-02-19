@@ -45,17 +45,16 @@ object ApplicationBuild extends Build {
   val formattingPreferences = {
     import scalariform.formatter.preferences._
     FormattingPreferences()
-      .setPreference(PreserveDanglingCloseParenthesis, true)
       .setPreference(AlignParameters, true)
       .setPreference(AlignArguments, true)
       .setPreference(CompactStringConcatenation, true)
-      .setPreference(SpacesAroundMultiImports, false)
+      .setPreference(SpacesAroundMultiImports, true)
       .setPreference(CompactStringConcatenation, true)
       .setPreference(CompactControlReadability, false)
       .setPreference(AlignSingleLineCaseStatements, true)
       .setPreference(AlignSingleLineCaseStatements.MaxArrowIndent, 40)
       .setPreference(SpacesWithinPatternBinders, true)
-      .setPreference(DoubleIndentClassDeclaration, true)
+      .setPreference(DoubleIndentClassDeclaration, false)
   }
 
   lazy val standardSettings = Defaults.defaultSettings ++
