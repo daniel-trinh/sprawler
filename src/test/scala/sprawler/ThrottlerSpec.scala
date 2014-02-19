@@ -1,15 +1,15 @@
 package sprawler
 
-import akka.testkit.{TestProbe, ImplicitSender, TestKit}
+import akka.testkit.{ TestProbe, ImplicitSender, TestKit }
 import akka.contrib.throttle.Throttler.Rate
 import akka.actor.ActorSystem
 
-import sprawler.http.client.{PromiseRequest, Throttler}
+import sprawler.http.client.{ PromiseRequest, Throttler }
 import sprawler.SpecHelper.DummyThrottler
 
 import org.scalatest._
 
-import scala.concurrent.{Await, Promise, Future}
+import scala.concurrent.{ Await, Promise, Future }
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 

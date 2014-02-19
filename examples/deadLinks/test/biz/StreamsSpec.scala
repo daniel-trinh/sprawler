@@ -66,8 +66,8 @@ class StreamsSpec extends WordSpec with ShouldMatchers with BeforeAndAfter {
                 "path" -> JsString("path"),
                 "message" -> JsString("url sucks"),
                 "errorType" -> JsString("url_not_allowed")
-              )
               ))
+            )
           ),
           JsString("EOF")
         )

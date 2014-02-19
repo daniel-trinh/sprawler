@@ -43,9 +43,9 @@ trait StreamingLinkScraper extends LinkScraper with Streams {
  * @param channel
  */
 class StreamingLinkScraperWorker(
-    master:           ActorRef,
-    originCrawlerUrl: CrawlerUrl,
-    val channel:      Channel[JsValue]
+  master:           ActorRef,
+  originCrawlerUrl: CrawlerUrl,
+  val channel:      Channel[JsValue]
 ) extends LinkScraperWorker(master, originCrawlerUrl) with StreamingLinkScraper {
   val log = Logging(context.system, this)
 

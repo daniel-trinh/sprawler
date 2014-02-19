@@ -1,7 +1,7 @@
 package sprawler
 
 import spray.routing.SimpleRoutingApp
-import spray.http.{Uri, StatusCodes}
+import spray.http.{ Uri, StatusCodes }
 
 import akka.actor.ActorSystem
 import akka.pattern.ask
@@ -9,8 +9,8 @@ import akka.testkit.TestKit
 import akka.io.IO
 import akka.util.Timeout
 
-import scala.util.{Success, Random}
-import scala.concurrent.{Await, ExecutionContext, Promise, Future}
+import scala.util.{ Success, Random }
+import scala.concurrent.{ Await, ExecutionContext, Promise, Future }
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 

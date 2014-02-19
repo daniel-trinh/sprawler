@@ -1,24 +1,24 @@
 package sprawler.actors
 
-import akka.testkit.{TestProbe, ImplicitSender, TestKit}
-import akka.actor.{ActorRef, PoisonPill, ActorSystem, Props}
-import akka.routing.{SmallestMailboxRouter, DefaultResizer, Broadcast}
+import akka.testkit.{ TestProbe, ImplicitSender, TestKit }
+import akka.actor.{ ActorRef, PoisonPill, ActorSystem, Props }
+import akka.routing.{ SmallestMailboxRouter, DefaultResizer, Broadcast }
 
 import sprawler.DummyTestServer
-import sprawler.crawler.actor.{LinkScraper, LinkQueueMaster, LinkScraperWorker}
+import sprawler.crawler.actor.{ LinkScraper, LinkQueueMaster, LinkScraperWorker }
 import sprawler.crawler.actor.WorkPullingPattern._
-import sprawler.crawler.url.{CrawlerUrl, AbsoluteUrl}
+import sprawler.crawler.url.{ CrawlerUrl, AbsoluteUrl }
 import sprawler.SpecHelper
 
-import org.scalatest.{WordSpecLike, ShouldMatchers, BeforeAndAfter, BeforeAndAfterAll}
+import org.scalatest.{ WordSpecLike, ShouldMatchers, BeforeAndAfter, BeforeAndAfterAll }
 
 import scala.collection.mutable
-import scala.concurrent.{Future, Await, ExecutionContext}
+import scala.concurrent.{ Future, Await, ExecutionContext }
 import scala.concurrent.duration._
-import scala.util.{Failure, Success, Try}
+import scala.util.{ Failure, Success, Try }
 import scala.concurrent.ExecutionContext.Implicits.global
 
-import spray.http.{HttpResponse, Uri}
+import spray.http.{ HttpResponse, Uri }
 import spray.can.Http
 import sprawler.actors.LinkActorsSpec.UncrawlableLinkScraper
 

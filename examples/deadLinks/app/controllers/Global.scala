@@ -11,6 +11,7 @@ object Global extends play.api.GlobalSettings {
     Future.successful(BadRequest(
       s"""|Bad Request @ ${request.toString}
           |Error @ $error
-          |""".stripMargin))
+          |""".stripMargin
+    ))
   }
 }
