@@ -15,7 +15,6 @@ object ApplicationBuild extends Build {
   val appName         = "Sprawler"
   val appVersion      = "0.2.0"
 
-
   val appDependencies = sprayDeps ++
     playDeps ++
     akkaDeps ++
@@ -123,7 +122,6 @@ object Dependencies {
     val Scala = "2.10.3"
     val Spray = "1.2.0"
     val Akka  = "2.2.3"
-    val SprayNightly = "1.2-20130912"
   }
 
   // NOTE: if you see a [error] java.lang.ExceptionInInitializerError
@@ -135,9 +133,10 @@ object Dependencies {
     "com.typesafe"           %  "config"           % "1.0.2",
     "com.github.nscala-time" %% "nscala-time"      % "0.6.0",
     "com.typesafe.atmos"     %  "trace-akka-2.1.4" % "1.2.1",
-    "org.scala-lang.modules" %% "scala-async"      % "0.9.0-M4"
+    "org.scala-lang.modules" %% "scala-async"      % "0.9.0-M4",
+    "com.netflix.rxjava"     % "rxjava-scala"      % "0.18.1"
   )
-  val Seq(typesafeConfig, nscalaTime, akkaTrace, scalaAsync) = miscDeps
+  val Seq(typesafeConfig, nscalaTime, akkaTrace, scalaAsync, rxScala) = miscDeps
 
   // Webcrawler related dependencies
   val crawlerDeps = Seq(

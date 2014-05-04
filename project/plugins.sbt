@@ -8,13 +8,15 @@ resolvers += Resolver.url("sbt-plugin-releases-scalasbt", url("http://repo.scala
 
 resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 
+resolvers += "Sonatype OSS Releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+
 resolvers += "spray repo" at "http://repo.spray.io"
 
 resolvers += Classpaths.typesafeResolver
 
 addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.2.0")
 
-addSbtPlugin("com.danieltrinh" % "sbt-scalariform" % "1.3.0-SNAPSHOT")
+addSbtPlugin("com.danieltrinh" % "sbt-scalariform" % "1.3.0")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-atmos" % "0.2.3")
 
