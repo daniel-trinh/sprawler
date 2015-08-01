@@ -6,7 +6,6 @@ import akka.routing.{ RouterConfig, Broadcast, SmallestMailboxRouter, DefaultRes
 import sprawler.crawler.url.CrawlerUrl
 
 import scala.concurrent.ExecutionContext
-import spray.can.client.{ HostConnectorSettings, ClientConnectionSettings }
 
 class LinkQueueMaster(seedUrls: List[CrawlerUrl]) extends Master[CrawlerUrl] {
   import WorkPullingPattern._

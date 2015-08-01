@@ -1,8 +1,8 @@
 package sprawler
 
+import akka.http.scaladsl.model.HttpHeader
 import org.jsoup.Jsoup
 import scala.collection.JavaConversions._
-import spray.http.HttpHeader
 
 object HtmlParser {
   /**

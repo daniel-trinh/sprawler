@@ -1,10 +1,10 @@
 package sprawler.crawler.url
 
+import akka.http.scaladsl.model.Uri.Empty
 import sprawler.crawler.CrawlerSession
 import sprawler.CrawlerExceptions.{ UnprocessableUrlException, RedirectLimitReachedException }
 
 import scala.util.{ Success, Failure, Try }
-import spray.http.Uri.Empty
 import java.util.concurrent.ConcurrentHashMap
 
 trait CheckUrlCrawlability { this: CrawlerUrl =>

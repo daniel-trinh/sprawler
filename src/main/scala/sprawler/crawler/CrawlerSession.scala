@@ -1,6 +1,7 @@
 package sprawler.crawler
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.Uri
 
 import sprawler.config._
 import sprawler.http.client.HttpCrawlerClient
@@ -8,7 +9,6 @@ import sprawler.http.client.HttpCrawlerClient
 import java.util.concurrent.ConcurrentHashMap
 
 import spray.caching.{ LruCache, Cache }
-import spray.http.Uri
 
 import scala.concurrent.{ Future, ExecutionContext }
 import sprawler.CrawlerExceptions.UnknownException

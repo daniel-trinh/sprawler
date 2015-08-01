@@ -1,13 +1,12 @@
 
 package sprawler.crawler.actor
 
+import akka.http.scaladsl.model.HttpResponse
 import sprawler.crawler.url.CrawlerUrl
 
 import scala.reflect._
 
 import akka.actor.ActorRef
-
-import spray.http.HttpResponse
 
 import scala.util.Try
 import scala.concurrent.Future

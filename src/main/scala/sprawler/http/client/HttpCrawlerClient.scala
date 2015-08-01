@@ -3,6 +3,7 @@ package sprawler.http.client
 import akka.actor._
 import akka.contrib.throttle._
 import akka.contrib.throttle.Throttler._
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, Uri }
 
 import sprawler.CrawlerExceptions._
 import sprawler.HtmlParser
@@ -16,10 +17,6 @@ import scala.concurrent.ExecutionContext
 import scala.util.{ Try, Success, Failure }
 import scala.{ Some, None }
 
-import spray.client.pipelining._
-import spray.http._
-import spray.http.HttpResponse
-
 import akka.contrib.throttle.Throttler.SetTarget
 import akka.contrib.throttle.Throttler.Rate
 
@@ -31,8 +28,8 @@ import akka.contrib.throttle.Throttler.Rate
  * @param uri The base URI that contains the hostname of the domain to crawl.
  */
 case class HttpCrawlerClient(
-  val uri:           Uri,
-  val crawlerConfig: CrawlerConfig = DefaultCrawlerConfig
+  uri:           Uri,
+  crawlerConfig: CrawlerConfig = DefaultCrawlerConfig
 )(
   implicit
   val system: ActorSystem
@@ -52,14 +49,14 @@ case class HttpCrawlerClient(
    */
   def printResponse(response: Future[HttpResponse]) {
     async {
-      println(await(response).entity.asString)
+      println(await(response).entity.toString)
     }
   }
 
   /**
    * Perform some GET requests in parallel
    * @param paths A traversable of relative paths to query
-   * @return A future [[scala.collection.Traversable]] of [[spray.http.HttpResponse]]
+   * @return A future [[scala.collection.Traversable]] of [[akka.http.scaladsl.model.HttpResponse]]
    */
   def parallelGet(paths: TraversableOnce[String]): Future[TraversableOnce[HttpResponse]] = {
     Future.traverse(paths) { path =>
@@ -77,10 +74,11 @@ case class HttpCrawlerClient(
    *   => res2: Future[HttpResponse]
    * }}}
    * @param path The path relative to domain to GET.
-   * @return A future [[spray.http.HttpResponse]]
+   * @return A future [[akka.http.scaladsl.model.HttpResponse]]
    */
   def get(path: String): Future[HttpResponse] = {
-    throttledSendReceive(Get(domain + path))
+    //    throttledSendReceive(Get(domain + path))
+    ???
   }
 
   /**
@@ -91,10 +89,11 @@ case class HttpCrawlerClient(
    *   => res1: Future[HttpResponse]
    * }}}
    * @param uri The request uri to GET.
-   * @return A future [[spray.http.HttpResponse]]
+   * @return A future [[akka.http.scaladsl.model.HttpResponse]]
    */
   def get(uri: Uri): Future[HttpResponse] = {
-    throttledSendReceive(Get(uri))
+    //    throttledSendReceive(Get(uri))
+    ???
   }
 
   /**
@@ -104,12 +103,13 @@ case class HttpCrawlerClient(
    *  client.get("/", sendReceive(conduit)) // gets the root page of github.com, with the basic spray.client pipeline
    * }}}
    * @param path The path relative to domain to GET.
-   * @param pipe A transformation function to be done on the [[spray.http.HttpRequest]]
+   * @param pipe A transformation function to be done on the [[akka.http.scaladsl.model.HttpRequest]]
    * @return A future of type T
    * @tparam T The type of the result of the transformation function
    */
   def get[T](path: String, pipe: HttpRequest => Future[T]): Future[T] = {
-    pipe(Get(domain + path))
+    //    pipe(Get(domain + path))
+    ???
   }
 
   /**
@@ -139,8 +139,9 @@ case class HttpCrawlerClient(
   }
 
   private def fetchRules: Future[BaseRobotRules] = {
-    val request = Get(domain+"/robots.txt")
-    fetchRobotRules(request)
+    //    val request = Get(domain+"/robots.txt")
+    //    fetchRobotRules(request)
+    ???
   }
 }
 
@@ -197,9 +198,8 @@ trait Throttler {
      * Receives a [[sprawler.http.client.PromiseRequest]], and complete's the promise with 'true'
      */
     def receive = {
-      case PromiseRequest(promise) => {
+      case PromiseRequest(promise) =>
         promise success true
-      }
     }
   }))
 

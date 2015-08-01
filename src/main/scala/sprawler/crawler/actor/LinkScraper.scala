@@ -1,5 +1,6 @@
 package sprawler.crawler.actor
 
+import akka.http.scaladsl.model.HttpResponse
 import sprawler.concurrency.FutureImplicits._
 import sprawler.crawler.CrawlerSession._
 import sprawler.crawler.url.CrawlerUrl
@@ -7,8 +8,6 @@ import sprawler.HtmlParser
 import sprawler.CrawlerExceptions.{ RedirectLimitReachedException, MissingRedirectUrlException }
 
 import akka.actor.{ ActorRef, ActorSystem }
-
-import spray.http.HttpResponse
 
 import scala.async.Async.{ async, await }
 import scala.util.{ Try, Success, Failure }
@@ -104,7 +103,7 @@ trait LinkScraper {
     if (status == 200) {
 
       // Find links and send them to master queue for more crawling
-      HtmlParser.extractLinks(response.entity.asString, url.uri.toString()) foreach { link =>
+      HtmlParser.extractLinks(response.entity.toString, url.uri.toString()) foreach { link =>
         val nextUrl = url.nextUrl(link)
         master ! Work(nextUrl)
       }
@@ -158,7 +157,7 @@ trait LinkScraper {
 
     require(isRedirect(response.status.intValue))
 
-    val locationHeader = HtmlParser.extractLocationLinkFromHeaders(response.headers, url.uri.toString())
+    val locationHeader = HtmlParser.extractLocationLinkFromHeaders(response.headers.toList, url.uri.toString())
 
     locationHeader match {
       case Some(link) =>

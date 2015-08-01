@@ -3,7 +3,6 @@ import Keys._
 import com.tuplejump.sbt.yeoman.Yeoman
 import com.typesafe.sbt.SbtScalariform
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
-import com.typesafe.sbt.SbtAtmos.{ Atmos, atmosSettings }
 import de.johoop.jacoco4sbt._
 import JacocoPlugin._
 
@@ -15,8 +14,7 @@ object ApplicationBuild extends Build {
   val appName         = "Sprawler"
   val appVersion      = "0.2.0"
 
-  val appDependencies = sprayDeps ++
-    playDeps ++
+  val appDependencies =
     akkaDeps ++
     miscDeps ++
     testDeps ++
@@ -29,8 +27,6 @@ object ApplicationBuild extends Build {
     jboss,
     scalaTools,
     typesafe,
-    spray,
-    sprayNightly,
     sonatype
   )
 
@@ -69,7 +65,7 @@ object ApplicationBuild extends Build {
     resolvers                   ++= appResolvers,
     javaOptions in Test         ++= Seq(
       // Uncomment this line when there's problems loading .conf files
-      // "-Dconfig.trace=loads", 
+      // "-Dconfig.trace=loads",
       "-Dconfig.resource=test.conf"),
     scalacOptions               ++= scalacSettings
   )
@@ -79,27 +75,23 @@ object ApplicationBuild extends Build {
     base      = file("."),
     settings  = standardSettings
   )
-  .configs(Atmos)
-  .settings(
-    atmosSettings: _*
-  )
 
-  lazy val deadLinksDemo: Project = play.Project(
-    appName + "DeadLinksDemo", 
-    "0.1.0",
-    appDependencies,
-    path = file("examples/deadLinks")
-  ).settings(
-    jacoco.settings ++
-    SbtScalariform.scalariformSettings ++
-    Seq(ScalariformKeys.preferences := formattingPreferences) ++ 
-    (scalacOptions ++= scalacSettings) ++
-    Yeoman.yeomanSettings: _*
-  ).dependsOn(
-    sprawler
-  ).aggregate(
-    sprawler
-  )
+//  lazy val deadLinksDemo: Project = play.Project(
+//    appName + "DeadLinksDemo",
+//    "0.1.0",
+//    appDependencies,
+//    path = file("examples/deadLinks")
+//  ).settings(
+//    jacoco.settings ++
+//    SbtScalariform.scalariformSettings ++
+//    Seq(ScalariformKeys.preferences := formattingPreferences) ++
+//    (scalacOptions ++= scalacSettings) ++
+//    Yeoman.yeomanSettings: _*
+//  ).dependsOn(
+//    sprawler
+//  ).aggregate(
+//    sprawler
+//  )
 }
 
 object Resolvers {
@@ -109,19 +101,15 @@ object Resolvers {
     "http://scala-tools.org/repo-snapshots"
   val typesafe   = "Typesafe Repository" at
     "http://repo.typesafe.com/typesafe/releases/"
-  val spray      = "spray repo" at
-    "http://repo.spray.io"
-  val sprayNightly = "spray nightly" at
-    "http://nightlies.spray.io"
   val sonatype   = "Sonatype OSS" at
     "https://oss.sonatype.org"
 }
 
 object Dependencies {
   object V {
-    val Scala = "2.10.3"
-    val Spray = "1.2.0"
-    val Akka  = "2.2.3"
+    val Scala = "2.11.7"
+    val Akka  = "2.3.12"
+    val AkkaHttp = "1.0"
   }
 
   // NOTE: if you see a [error] java.lang.ExceptionInInitializerError
@@ -130,18 +118,18 @@ object Dependencies {
 
   // Misc
   val miscDeps = Seq(
-    "com.typesafe"           %  "config"           % "1.0.2",
-    "com.github.nscala-time" %% "nscala-time"      % "0.6.0",
-    "com.typesafe.atmos"     %  "trace-akka-2.1.4" % "1.2.1",
-    "org.scala-lang.modules" %% "scala-async"      % "0.9.0-M4",
-    "com.netflix.rxjava"     % "rxjava-scala"      % "0.18.1"
+    "com.typesafe"           %  "config"         % "1.0.2",
+    "com.github.nscala-time" %% "nscala-time"    % "2.0.0",
+    "org.json4s"             %% "json4s-jackson" % "3.2.11",
+    "org.scala-lang.modules" %% "scala-async"    % "0.9.4",
+    "io.spray" %% "spray-caching" % "1.3.1"
   )
-  val Seq(typesafeConfig, nscalaTime, akkaTrace, scalaAsync, rxScala) = miscDeps
+  val Seq(typesafeConfig, nscalaTime, json4s, scalaAsync, sprayCaching) = miscDeps
 
   // Webcrawler related dependencies
   val crawlerDeps = Seq(
-    "com.google.code.crawler-commons" % "crawler-commons"  % "0.2",
-    "org.jsoup"                       % "jsoup"            % "1.7.2"
+    "com.github.crawler-commons" % "crawler-commons" % "0.6",
+    "org.jsoup"                  % "jsoup"           % "1.7.2"
   )
   val Seq(crawlerCommons, jsoup) = crawlerDeps
 
@@ -149,43 +137,18 @@ object Dependencies {
   val akkaDeps = Seq(
     "com.typesafe.akka" %% "akka-agent" % V.Akka,
     "com.typesafe.akka" %% "akka-actor" % V.Akka,
-    "com.typesafe.akka" %% "akka-contrib" % V.Akka
+    "com.typesafe.akka" %% "akka-contrib" % V.Akka,
+    "com.typesafe.akka" %% "akka-stream-experimental" % V.AkkaHttp,
+    "com.typesafe.akka" %% "akka-http-experimental"   % V.AkkaHttp
   )
-  val Seq(akkaAgent, akkaActor, akkaContrib) = akkaDeps
-
-  // Spray
-  val sprayDeps = Seq(
-    "io.spray" % "spray-client"  % V.Spray,
-    "io.spray" % "spray-can"     % V.Spray,
-    "io.spray" % "spray-http"    % V.Spray,
-    "io.spray" % "spray-httpx"   % V.Spray,
-    "io.spray" % "spray-util"    % V.Spray,
-    "io.spray" % "spray-caching" % V.Spray
-  )
-  val Seq(
-    sprayClient,
-    sprayCan,
-    sprayHttp,
-    sprayHttpx,
-    sprayUtil,
-    sprayCaching
-  ) = sprayDeps
-
-  // Play
-  val playDeps = Seq(
-    "com.typesafe.play" %% "play-json" % "2.2.1"
-  )
-  val Seq(playJson) = playDeps
+  val Seq(akkaAgent, akkaActor, akkaContrib, akkaStreams, akkaHttp) = akkaDeps
 
   // Testing dependencies
   val testDeps = Seq(
-    "com.typesafe.akka" %% "akka-testkit"                % V.Akka   % "test",
-    "org.scalatest"     %  "scalatest_2.10"              % "2.0"    % "test",
-    "org.scalamock"     %% "scalamock-scalatest-support" % "3.0.1"  % "test",
-    // Used to start a bare bones server for testing the crawler
-    "io.spray"          %  "spray-routing"               % V.Spray  % "test"
+    "com.typesafe.akka" %% "akka-testkit"  % V.Akka  % "test",
+    "org.scalatest"     % "scalatest_2.11" % "2.2.4" % "test"
   )
-  val Seq(akkaTestkit, scalaTest, scalaMock, sprayRouting) = testDeps
+  val Seq(akkaTestkit, scalaTest) = testDeps
 }
 
 /**
@@ -227,15 +190,7 @@ object PreRun {
         |import scala.{ Some, None }
       """.stripMargin
 
-    val spray =
-      """
-        |import spray.client.pipelining._
-        |import spray.http._
-        |import spray.http.HttpResponse
-        |import HttpMethods._
-      """.stripMargin
-
-    val imports = akka + webcrawler + scala + spray
+    val imports = akka + webcrawler + scala
   }
 
   object Commands {

@@ -1,7 +1,7 @@
 package sprawler.http.client
 
 import akka.actor.{ ActorSystem, Status, ActorRef }
-import akka.spray.{ UnregisteredActorRef, RefUtils }
+import akka.http.scaladsl.model.{ HttpResponse, HttpRequest }
 
 import sprawler.config._
 import sprawler.CrawlerExceptions.{ UrlNotAllowedException, FailedHttpRequestException }
@@ -13,9 +13,6 @@ import crawlercommons.robots.BaseRobotRules
 import scala.async.Async._
 import scala.concurrent.{ Promise, Future, ExecutionContext }
 import scala.util.{ Failure, Success, Try }
-
-import spray.http.{ StatusCodes, HttpRequest, HttpResponse }
-import spray.client.pipelining._
 
 trait HttpClientPipelines extends Throttler {
 
@@ -38,7 +35,8 @@ trait HttpClientPipelines extends Throttler {
    * [[sprawler.CrawlerExceptions.FailedHttpRequestException]] via parseBody.
    */
   val bodyOnlyPipeline = {
-    throttledSendReceive ~> parseBody
+    //    throttledSendReceive ~> parseBody
+    ???
   }
 
   /**
@@ -49,8 +47,9 @@ trait HttpClientPipelines extends Throttler {
    * sendReceive
    */
   val fetchRobotRules = {
-    sendReceiver ~>
-      parseRobotRules
+    //    sendReceiver ~>
+    //      parseRobotRules
+    ???
   }
 
   /**
@@ -62,8 +61,8 @@ trait HttpClientPipelines extends Throttler {
   def parseBody(response: Future[HttpResponse]): Future[String] = {
     async {
       val res = await(response)
-      if (res.status.isSuccess) {
-        res.entity.asString
+      if (res.status.isSuccess()) {
+        res.entity.toString
       } else {
         await(Future.failed[String](FailedHttpRequestException(res.status.intValue, res.status.reason, res.status.defaultMessage)))
       }
@@ -102,7 +101,7 @@ trait HttpClientPipelines extends Throttler {
       // Certain non robots formatted txt will cause "Allow All" to be false,
       // so send an empty string whenever the response code isn't a 200 OK.
       val robotsTxt = if (response.status.intValue == 200)
-        response.entity.asString
+        response.entity.toString
       else
         ""
 
@@ -115,7 +114,8 @@ trait HttpClientPipelines extends Throttler {
    * @return A function for performing HTTP requests.
    */
   def sendReceiver: HttpRequest => Future[HttpResponse] = {
-    sendReceive
+    //    sendReceive
+    ???
   }
 
   /**
@@ -127,24 +127,25 @@ trait HttpClientPipelines extends Throttler {
    *         not crawlable.
    */
   private def checkAndThrottleRequest(urlIsAllowed: Boolean, request: HttpRequest): Future[HttpResponse] = {
-    async {
-      if (urlIsAllowed) {
-        val p = Promise[Boolean]()
-        await(throttler) ! PromiseRequest(p)
-        await(p.future)
-
-        val result = await(sendReceiver(request))
-        result
-      } else {
-
-        await(Future.failed[HttpResponse](
-          UrlNotAllowedException(
-            host    = domain,
-            path    = request.uri.path.toString(),
-            message = UrlNotAllowedException.RobotRuleDisallowed
-          )
-        ))
-      }
-    }
+    ???
+    //    async {
+    //      if (urlIsAllowed) {
+    //        val p = Promise[Boolean]()
+    //        await(throttler) ! PromiseRequest(p)
+    //        await(p.future)
+    //
+    //        val result = await(sendReceiver(request))
+    //        result
+    //      } else {
+    //
+    //        await(Future.failed[HttpResponse](
+    //          UrlNotAllowedException(
+    //            host    = domain,
+    //            path    = request.uri.path.toString(),
+    //            message = UrlNotAllowedException.RobotRuleDisallowed
+    //          )
+    //        ))
+    //      }
+    //    }
   }
 }

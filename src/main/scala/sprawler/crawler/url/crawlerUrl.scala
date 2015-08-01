@@ -1,12 +1,12 @@
 package sprawler.crawler.url
 
+import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.Uri.Empty
 import sprawler.config.CrawlerConfig
 import sprawler.CrawlerExceptions.UnprocessableUrlException
 
 import scala.util.{ Failure, Success, Try }
 
-import spray.http.Uri
-import spray.http.Uri.Empty
 import sprawler.crawler.CrawlerSession
 
 /**
@@ -105,12 +105,13 @@ case class AbsoluteUrl(
       s"${uri.scheme}${uri.toString()}"
     }
 
-    val prependedUri = spray.client.pipelining.Get(prependedUrl).uri
-    val host = prependedUri.authority.host.address
-    if (host != "") {
-      Success(host)
-    } else {
-      Failure(UnprocessableUrlException(fromUri.toString(), uri.toString(), "Unable to determine domain name from URL"))
-    }
+    //    val prependedUri = spray.client.pipelining.Get(prependedUrl).uri
+    //    val host = prependedUri.authority.host.address
+    //    if (host != "") {
+    //      Success(host)
+    //    } else {
+    //      Failure(UnprocessableUrlException(fromUri.toString(), uri.toString(), "Unable to determine domain name from URL"))
+    //    }
+    ???
   }
 }
